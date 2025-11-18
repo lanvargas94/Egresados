@@ -1,0 +1,21 @@
+alter table countries add column if not exists dial_code varchar(10);
+
+update countries set dial_code = '+57' where code = 'CO';
+update countries set dial_code = '+1' where code in ('US','CA','DO','PR');
+update countries set dial_code = '+34' where code = 'ES';
+update countries set dial_code = '+52' where code = 'MX';
+update countries set dial_code = '+54' where code = 'AR';
+update countries set dial_code = '+51' where code = 'PE';
+update countries set dial_code = '+56' where code = 'CL';
+update countries set dial_code = '+55' where code = 'BR';
+update countries set dial_code = '+58' where code = 'VE';
+update countries set dial_code = '+593' where code = 'EC';
+update countries set dial_code = '+507' where code = 'PA';
+update countries set dial_code = '+598' where code = 'UY';
+update countries set dial_code = '+595' where code = 'PY';
+update countries set dial_code = '+591' where code = 'BO';
+update countries set dial_code = '+506' where code = 'CR';
+update countries set dial_code = '+49' where code = 'DE';
+update countries set dial_code = '+33' where code = 'FR';
+update countries set dial_code = '+39' where code = 'IT';
+update countries set dial_code = '+44' where code = 'GB';
