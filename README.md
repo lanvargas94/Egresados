@@ -1,112 +1,144 @@
 # Egresados - CORHUILA (Monorepo)
 
-Plataforma monorepo con backend Spring Boot (arquitectura hexagonal), PostgreSQL y despliegue via Docker Compose. En un siguiente hito se anexara el frontend Angular con los modulos de Onboarding, Perfil, Noticias, Empleos, Eventos y Admin.
+Plataforma monorepo con backend Spring Boot (arquitectura hexagonal), frontend Angular, PostgreSQL y Mailhog, orquestados con Docker Compose.
 
 ## Estructura del repositorio
 
-- `backend/`: API Spring Boot organizada por dominio, puertos, casos de uso y adaptadores.
-- `deploy/`: archivos Docker Compose para levantar PostgreSQL y el backend.
-- `frontend/`: reservado para la app Angular (aun no disponible).
+- `backend/`: API Spring Boot (dominios, puertos, casos de uso, adaptadores).
+- `frontend/`: app Angular servida con Nginx en Docker.
+- `deploy/`: `docker-compose.yml` para todos los servicios (db, backend, frontend, mailhog).
+- `DATOS_PRUEBA.md`: usuarios y datos de prueba listos para validar flujos.
 
 ## Requisitos previos
 
-1. Git 2.x para clonar y actualizar el repositorio.
-2. Docker Desktop o Docker Engine 24+ con Docker Compose v2 incluido.
-3. (Opcional) Java 17 y Maven 3.9+ si deseas compilar o ejecutar el backend fuera de Docker.
+1. Git 2.x para clonar.
+2. Docker Desktop / Docker Engine 24+ con Docker Compose v2.
+3. (Opcional) Java 17 y Maven 3.9+ si quieres correr el backend fuera de Docker.
+4. (Opcional) Node 18+ si quieres correr el frontend en modo desarrollo.
 
-Comprueba las versiones con:
+Verifica versiones:
 
 ```bash
 git --version
 docker --version
 docker compose version
 mvn -v        # Solo si usaras Maven
-java -version # Solo si usaras Java local
+node -v       # Solo si usaras el frontend local
 ```
 
-## Paso a paso para ejecutar en otro equipo (via Docker)
+## Puertos y colisiones frecuentes
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/lanvargas94/Egresados.git
-   cd Egresados
-   ```
-2. **Revisar configuraciones**  
-   - El archivo `deploy/docker-compose.yml` expone PostgreSQL en el puerto 5432 y la API en 8080.  
-   - Variables de entorno del servicio backend:
-     - `DB_URL`: URL JDBC (por defecto `jdbc:postgresql://db:5432/egresados`).
-     - `DB_USER`: usuario de la base (por defecto `egresados`).
-     - `DB_PASSWORD`: contrasena del usuario (por defecto `egresados`).
-   - Ajusta estos valores en `deploy/docker-compose.yml` si necesitas otras credenciales o puertos.
-3. **Construir y levantar los servicios**
-   ```bash
-   cd deploy
-   docker compose up --build
-   ```
-   Este comando crea las imagenes de backend y base de datos, corre migraciones Flyway y deja todo disponible en tu maquina. Para ejecutar en segundo plano agrega `-d`.
-4. **Verificar que el backend esta activo**
-   - API base: `http://localhost:8080/api/health` (siempre que exista un endpoint de salud) o cualquier otro endpoint descrito abajo.
-   - Swagger UI: `http://localhost:8080/swagger`.
-   - Logs: `docker compose logs -f backend`.
-   - **Credenciales de prueba** (ver apartado siguiente) listas para autenticacion/mock.
-5. **Detener los servicios cuando termines**
-   ```bash
-   docker compose down
-   ```
+- 3002: frontend (Nginx). Si ya usas 3002, cambia el mapeo del servicio `frontend` en `deploy/docker-compose.yml` (ej. `3005:80`).
+- 5432: PostgreSQL. Si tienes otro Postgres en 5432, cambia el mapeo `5432:5432` (ej. `5440:5432`) y ajusta tus clientes externos.
+- 1025 (SMTP) y 8025 (UI): Mailhog. Cambia los mapeos si los tienes ocupados.
+- El backend expone 8080 dentro de la red de Docker. No se publica hacia el host; accedes via frontend. Si necesitas llamarlo directo desde el host, agrega `ports: ["3001:8080"]` en el servicio `backend`.
 
-## Ejecucion manual del backend (opcional)
+## Variables clave en `deploy/docker-compose.yml`
 
-Si prefieres no usar Docker o deseas depurar directamente en tu IDE:
+Backend:
+- `DB_URL=jdbc:postgresql://db:5432/egresados`
+- `DB_USER=postgres`
+- `DB_PASSWORD=postgres`
+- `PORT=8080`
+- `JWT_SECRET` y `JWT_EXP_MS` (token dev por defecto)
+- `FRONT_ORIGIN=http://localhost:3002`
+- `MAIL_*` y `APP_CONFIRM_URL` apuntan a Mailhog y al frontend
 
-1. Asegura un PostgreSQL disponible y crea la base `egresados`.
-2. Define las variables de entorno antes de correr la aplicacion:
-   ```bash
-   export DB_URL=jdbc:postgresql://localhost:5432/egresados
-   export DB_USER=egresados
-   export DB_PASSWORD=egresados
-   ```
-3. Desde `backend/`, compila y ejecuta:
-   ```bash
-   mvn clean package
-   java -jar target/egresados*.jar
-   # o directamente
-   mvn spring-boot:run
-   ```
-4. El backend quedara en `http://localhost:8080` igual que en Docker.
+Base de datos:
+- `POSTGRES_DB=egresados`
+- `POSTGRES_USER=postgres`
+- `POSTGRES_PASSWORD=postgres`
+
+Ajusta estos valores si cambias puertos o credenciales.
+
+## Paso a paso (Docker Compose)
+
+1) Clonar y entrar  
+```bash
+git clone https://github.com/lanvargas94/Egresados.git
+cd Egresados
+```
+
+2) Levantar servicios  
+```bash
+cd deploy
+docker compose up --build
+# o en segundo plano
+docker compose up --build -d
+```
+- Construye frontend y backend, levanta PostgreSQL y Mailhog, y aplica migraciones Flyway.
+- Si algun puerto ya esta en uso, edita los mapeos en `deploy/docker-compose.yml` antes de ejecutar el comando.
+
+3) Verificar  
+- Frontend: `http://localhost:3002` (UI y peticiones /api proxied al backend).
+- Mailhog UI: `http://localhost:8025` (correos dev). SMTP en `localhost:1025`.
+- Logs: `docker compose logs -f backend` o `docker compose logs -f frontend`.
+- Datos/usuarios de prueba: ver `DATOS_PRUEBA.md`.
+
+4) Detener  
+```bash
+docker compose down
+# agrega -v si quieres borrar el volumen de datos de Postgres
+```
+
+## Ejecucion manual (opcional)
+
+### Backend sin Docker
+1. Tener Postgres disponible y la base `egresados`.
+2. Variables de entorno:
+```bash
+export DB_URL=jdbc:postgresql://localhost:5432/egresados
+export DB_USER=postgres
+export DB_PASSWORD=postgres
+export JWT_SECRET=this_is_a_dev_secret_key_at_least_32_chars_long
+export JWT_EXP_MS=86400000
+export MAIL_HOST=localhost
+export MAIL_PORT=1025
+export MAIL_AUTH=false
+export MAIL_STARTTLS=false
+export MAIL_FROM=no-reply@egresados.local
+export APP_CONFIRM_URL=http://localhost:3002/confirmar?token=
+```
+3. Ejecutar desde `backend/`:
+```bash
+mvn clean package
+java -jar target/egresados*.jar
+# o
+mvn spring-boot:run
+```
+4. API en `http://localhost:8080` (ajusta `PORT` si cambias).
+
+### Frontend sin Docker
+```bash
+cd frontend
+npm install
+npm start
+```
+- Servira en `http://localhost:4200`.
+- El `environment.ts` usa `/api`; para desarrollo local asegurate de que el backend este accesible en el mismo host (puedes agregar un proxy o mapear el backend a 3001 y configurar ese puerto).
 
 ## Migraciones de base de datos
 
-- Se encuentran en `backend/src/main/resources/db/migration`.
-- Flyway se ejecuta automaticamente tanto en Docker como al iniciar la aplicacion con Maven.
-- Para agregar cambios estructurales, crea nuevos archivos `VXX__descripcion.sql` en la carpeta mencionada.
+- Carpeta: `backend/src/main/resources/db/migration`.
+- Flyway corre al iniciar el backend, tanto en Docker como con Maven.
+- Nuevas migraciones: agrega archivos `VXX__descripcion.sql`.
 
-## Endpoints base (v0)
+## Endpoints base
 
-- `POST /api/auth/identify` con `{ "numeroIdentificacion": "" }`. Respuestas: `status` (`onboarding`, `panel`, `no_encontrado`, `bloqueo`), `graduateId`, `nombre`. Hay un mock: documento `123456789` devuelve un egresado de ejemplo.
+- `POST /api/auth/identify` { "numeroIdentificacion": "" } -> `status` (`onboarding`, `panel`, `no_encontrado`, `bloqueo`), `graduateId`, `nombre` (mock para 123456789).
 - `PUT /api/onboarding/step1` datos de contacto.
 - `PUT /api/onboarding/step2` informacion laboral.
-- `PUT /api/onboarding/step3` consentimiento, marca onboarding completo (RN-O02).
-- `GET /api/news` obtiene noticias vigentes (RN-N01).
+- `PUT /api/onboarding/step3` consentimiento (marca onboarding completo).
+- `GET /api/news` noticias vigentes.
+- Swagger: `/swagger` (via backend).
 
-## Credenciales de prueba
+## Credenciales y datos de prueba
 
-Usa estos valores para validar los flujos sin afectar datos reales:
+- Ver `DATOS_PRUEBA.md` para usuarios admin, egresados y flujos guiados.
+- Base de datos por defecto (Docker): `Host localhost`, `Puerto 5432`, `DB egresados`, `Usuario postgres`, `Password postgres`. Si cambiaste el puerto de exposicion, usa el nuevo.
 
-- Documento mock onboarding: `numeroIdentificacion = 123456789`.
-- Usuario backend (por defecto en Docker): `DB_USER = egresados`, `DB_PASSWORD = egresados`.
-- Credenciales de base de datos para administracion directa (`psql` o cliente GUI):
-  ```bash
-  Host: localhost
-  Puerto: 5432
-  Base: egresados
-  Usuario: egresados
-  Contrasena: egresados
-  ```
-Si necesitas usuarios adicionales, duplicalos en PostgreSQL o ajusta `deploy/docker-compose.yml`.
+## Notas y proximos pasos
 
-## Proximos pasos planificados
-
-- Implementar el frontend Angular (Onboarding, Panel, Admin).
-- Modulos Admin con CRUD de Noticias, Empleos y Eventos.
-- OTP via correo para reingreso (2.2).
-- Reportes, analitica y comunicaciones por campanas.
+- Mailhog captura todos los correos en desarrollo, revisa confirmaciones en `http://localhost:8025`.
+- Si necesitas exponer el backend al host para pruebas externas, publica el puerto en `deploy/docker-compose.yml` antes de levantar.
+- Pendientes: evolutivos del admin, OTP, modulos adicionales y ajustes de UI/UX del frontend.
