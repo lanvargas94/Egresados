@@ -23,4 +23,43 @@ public class AdminUseCaseConfig {
                                              com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringGraduateJpaRepository grads) {
         return new EventRsvpService(repo, waitlistRepo, email, grads);
     }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.AdminReportsUseCase adminReportsUseCase(
+            com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringGraduateJpaRepository graduateJpa,
+            com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringEventJpaRepository eventJpa,
+            com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringEventRsvpJpaRepository rsvpJpa) {
+        return new com.corhuila.egresados.application.admin.AdminReportsUseCase(graduateJpa, eventJpa, rsvpJpa);
+    }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.ManageBannerUseCase manageBannerUseCase(
+            com.corhuila.egresados.domain.ports.BannerRepository bannerRepository) {
+        return new com.corhuila.egresados.application.admin.ManageBannerUseCase(bannerRepository);
+    }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.ManageAdminUserUseCase manageAdminUserUseCase(
+            com.corhuila.egresados.domain.ports.AdminUserRepository adminUserRepository,
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+        return new com.corhuila.egresados.application.admin.ManageAdminUserUseCase(adminUserRepository, passwordEncoder);
+    }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.ListGraduatesUseCase listGraduatesUseCase(
+            com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringGraduateJpaRepository jpa) {
+        return new com.corhuila.egresados.application.admin.ListGraduatesUseCase(jpa);
+    }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.UpdateGraduateUseCase updateGraduateUseCase(
+            com.corhuila.egresados.domain.ports.GraduateRepository graduateRepository) {
+        return new com.corhuila.egresados.application.admin.UpdateGraduateUseCase(graduateRepository);
+    }
+
+    @Bean
+    public com.corhuila.egresados.application.admin.ChangeGraduateStatusUseCase changeGraduateStatusUseCase(
+            com.corhuila.egresados.domain.ports.GraduateRepository graduateRepository) {
+        return new com.corhuila.egresados.application.admin.ChangeGraduateStatusUseCase(graduateRepository);
+    }
 }

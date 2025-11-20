@@ -18,5 +18,18 @@ public class NewsMapper {
         n.setEstado(e.getEstado());
         return n;
     }
+
+    public static void updateEntity(News n, NewsEntity e) {
+        if (n == null || e == null) return;
+        e.setId(n.getId());
+        e.setTitulo(n.getTitulo());
+        e.setResumen(n.getResumen());
+        e.setCuerpoHtml(n.getCuerpoHtml());
+        e.setFechaPublicacion(n.getFechaPublicacion());
+        e.setImagenUrl(n.getImagenUrl());
+        e.setAdjuntoUrl(n.getAdjuntoUrl());
+        e.setEnlaceExterno(n.getEnlaceExterno());
+        e.setEstado(n.getEstado());
+    }
 }
 

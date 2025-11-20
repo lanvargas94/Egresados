@@ -1,41 +1,207 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { ToastService } from '../services/toast.service';
 
 @Component({
   selector: 'app-admin-jobs-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
   <div class="container">
-    <h2>Empleos (Admin)</h2>
+    <h2>Ofertas de Empleo (Admin)</h2>
     <form [formGroup]="f" (ngSubmit)="load()" class="card">
       <label>Estado</label>
-      <select formControlName="estado"><option value="">(Todos)</option><option>BORRADOR</option><option>PUBLICADA</option><option>VENCIDA</option><option>ARCHIVADA</option></select>
+      <select formControlName="estado">
+        <option value="">(Todos)</option>
+        <option value="BORRADOR">BORRADOR</option>
+        <option value="PUBLICADA">PUBLICADA</option>
+        <option value="VENCIDA">VENCIDA</option>
+        <option value="ARCHIVADA">ARCHIVADA</option>
+      </select>
       <button class="btn" type="submit">Filtrar</button>
+      <a class="btn" routerLink="/admin/jobs/new" style="margin-left:8px">Nuevo</a>
     </form>
-    <div class="card" *ngFor="let j of items">
-      <b>{{j.titulo}}</b> — {{j.empresa}} — {{j.estado}}
-      <div>
-        <button class="btn" (click)="publish(j.id)">Publicar</button>
-        <button class="btn" style="background:#666" (click)="archive(j.id)">Archivar</button>
-        <button class="btn" style="background:#b00020" (click)="remove(j.id)">Eliminar</button>
+    
+    <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
+      <p>Sin resultados</p>
+    </div>
+
+    <div *ngIf="loading" class="card" style="text-align: center; padding: 2rem;">
+      <p>Cargando...</p>
+    </div>
+
+    <div class="card" *ngFor="let j of items" style="margin-bottom: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+        <div style="flex: 1;">
+          <h3 style="margin: 0 0 0.5rem 0;">{{j.titulo}}</h3>
+          <p style="margin: 0.25rem 0; color: #666;">
+            <strong>Empresa:</strong> {{j.empresa || 'N/A'}} | 
+            <strong>Ciudad:</strong> {{j.ciudad || 'N/A'}} | 
+            <strong>Modalidad:</strong> {{j.modalidad || 'N/A'}}
+          </p>
+          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+            <strong>Publicación:</strong> {{formatDate(j.fechaInicioPublicacion)}} - 
+            <strong>Vence:</strong> {{formatDate(j.fechaFinPublicacion) || 'Sin fecha'}}
+          </p>
+        </div>
+        <span [class]="'badge badge-' + getEstadoClass(j.estado)" style="margin-left: 1rem;">
+          {{j.estado}}
+        </span>
+      </div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+        <a class="btn" [routerLink]="['/admin/jobs', j.id]">Editar</a>
+        <button class="btn" *ngIf="j.estado === 'BORRADOR'" (click)="publish(j.id)">Publicar</button>
+        <button class="btn" *ngIf="j.estado === 'PUBLICADA'" (click)="expire(j.id)" style="background:#ff9800">Marcar como Vencida</button>
+        <button class="btn" *ngIf="j.estado !== 'ARCHIVADA'" (click)="archive(j.id)" style="background:#666">Archivar</button>
       </div>
     </div>
-    <button class="btn" (click)="prev()" [disabled]="page===0">Prev</button>
-    <button class="btn" (click)="next()" [disabled]="(page+1)*this.size>=total">Next</button>
-  </div>`
+    
+    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+      <button class="btn" (click)="prev()" [disabled]="page===0 || loading">Anterior</button>
+      <span style="padding: 0.5rem 1rem; display: inline-block;">
+        Página {{page + 1}} de {{totalPages}} ({{total}} total)
+      </span>
+      <button class="btn" (click)="next()" [disabled]="(page+1)*size>=total || loading">Siguiente</button>
+    </div>
+  </div>
+  `,
+  styles: [`
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-BORRADOR {
+      background-color: #9e9e9e;
+      color: white;
+    }
+    .badge-PUBLICADA {
+      background-color: #4caf50;
+      color: white;
+    }
+    .badge-VENCIDA {
+      background-color: #ff9800;
+      color: white;
+    }
+    .badge-ARCHIVADA {
+      background-color: #666;
+      color: white;
+    }
+  `]
 })
 export class AdminJobsListComponent implements OnInit {
-  items:any[]=[]; total=0; page=0; size=10; f=this.fb.group({estado:['']});
-  constructor(private api: ApiService, private fb: FormBuilder, private toasts: ToastService) {}
-  ngOnInit(){ this.load(); }
-  load(){ const estado=this.f.value.estado||''; this.api.get(`/admin/jobs?page=${this.page}&size=${this.size}${estado?`&estado=${estado}`:''}`).subscribe((res:any)=>{ this.items=res.items; this.total=res.total; }); }
-  prev(){ if(this.page>0){ this.page--; this.load(); } }
-  next(){ if((this.page+1)*this.size<this.total){ this.page++; this.load(); } }
-  publish(id:string){ if(!confirm('¿Publicar esta oferta?')) return; this.api.post(`/admin/jobs/${id}/publish`,{}).subscribe(()=>{ this.toasts.success('Publicada'); this.load(); }); }
-  archive(id:string){ if(!confirm('¿Archivar esta oferta?')) return; this.api.post(`/admin/jobs/${id}/archive`,{}).subscribe(()=>{ this.toasts.success('Archivada'); this.load(); }); }
-  remove(id:string){ if(!confirm('¿Eliminar definitivamente esta oferta?')) return; this.api.delete(`/admin/jobs/${id}`).subscribe(()=>{ this.toasts.success('Eliminada'); this.load(); }); }
+  items:any[]=[]; 
+  total=0; 
+  page=0; 
+  size=10; 
+  loading = false;
+  f=this.fb.group({estado:['']});
+  
+  constructor(
+    private api: ApiService, 
+    private fb: FormBuilder, 
+    private toasts: ToastService
+  ) {}
+  
+  ngOnInit(){ 
+    this.load(); 
+  }
+  
+  get totalPages(): number {
+    return Math.ceil(this.total / this.size);
+  }
+  
+  load(){ 
+    this.loading = true;
+    const estado=this.f.value.estado||''; 
+    this.api.get(`/admin/jobs?page=${this.page}&size=${this.size}${estado?`&estado=${estado}`:''}`).subscribe({
+      next: (res:any) => { 
+        this.items=res.items; 
+        this.total=res.total; 
+        this.loading = false;
+      },
+      error: (err) => {
+        this.toasts.error('Error al cargar ofertas');
+        this.loading = false;
+      }
+    });
+  }
+  
+  prev(){ 
+    if(this.page>0){ 
+      this.page--; 
+      this.load(); 
+    } 
+  }
+  
+  next(){ 
+    if((this.page+1)*this.size<this.total){ 
+      this.page++; 
+      this.load(); 
+    } 
+  }
+  
+  publish(id:string){ 
+    if(!confirm('¿Publicar esta oferta?')) return; 
+    this.api.post(`/admin/jobs/${id}/publish`,{}).subscribe({
+      next: () => { 
+        this.toasts.success('Oferta publicada'); 
+        this.load(); 
+      },
+      error: (err: any) => {
+        const msg = err.error?.error || 'Error al publicar';
+        this.toasts.error(msg);
+      }
+    }); 
+  }
+  
+  expire(id:string){ 
+    if(!confirm('¿Marcar esta oferta como vencida?')) return; 
+    this.api.post(`/admin/jobs/${id}/expire`,{}).subscribe({
+      next: () => { 
+        this.toasts.success('Oferta marcada como vencida'); 
+        this.load(); 
+      },
+      error: (err: any) => {
+        const msg = err.error?.error || 'Error al marcar como vencida';
+        this.toasts.error(msg);
+      }
+    }); 
+  }
+  
+  archive(id:string){ 
+    if(!confirm('¿Archivar esta oferta?')) return; 
+    this.api.post(`/admin/jobs/${id}/archive`,{}).subscribe({
+      next: () => { 
+        this.toasts.success('Oferta archivada'); 
+        this.load(); 
+      },
+      error: (err: any) => {
+        const msg = err.error?.error || 'Error al archivar';
+        this.toasts.error(msg);
+      }
+    }); 
+  }
+  
+  getEstadoClass(estado: string): string {
+    return estado || 'BORRADOR';
+  }
+  
+  formatDate(date: string | null): string {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return date;
+    }
+  }
 }

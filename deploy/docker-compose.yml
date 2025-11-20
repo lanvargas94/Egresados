@@ -20,12 +20,13 @@ services:
       PORT: 8080
       JWT_SECRET: this_is_a_dev_secret_key_at_least_32_chars_long
       JWT_EXP_MS: 86400000
+      FRONT_ORIGIN: http://localhost:3002
       MAIL_HOST: mailhog
       MAIL_PORT: 1025
       MAIL_AUTH: "false"
       MAIL_STARTTLS: "false"
       MAIL_FROM: no-reply@egresados.local
-      APP_CONFIRM_URL: http://localhost:4200/confirmar?token=
+      APP_CONFIRM_URL: http://localhost:3002/confirmar?token=
     depends_on:
       - db
       - mailhog
@@ -37,7 +38,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "3002:80"
 
   mailhog:
     image: mailhog/mailhog:latest

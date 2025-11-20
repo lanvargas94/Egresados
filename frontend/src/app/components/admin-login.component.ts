@@ -177,14 +177,16 @@ export class AdminLoginComponent {
     }
     this.loading = true;
     this.auth.login(this.f.value.username!, this.f.value.password!).subscribe({
-      next: () => { 
+      next: (res) => { 
         this.loading = false; 
         this.toasts.success('Sesión administrativa iniciada');
-        this.router.navigate(['/admin/news']);
+        // Redirigir al dashboard admin
+        this.router.navigate(['/admin/graduates']);
       },
-      error: () => { 
+      error: (err) => { 
         this.loading = false; 
-        this.toasts.error('Credenciales inválidas. Verifica tu usuario y contraseña.'); 
+        const message = err?.error?.error || 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+        this.toasts.error(message); 
       }
     });
   }

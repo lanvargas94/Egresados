@@ -15,4 +15,6 @@ public interface JobOfferRepository {
     List<JobOffer> findToExpire(LocalDate hoy);
     com.corhuila.egresados.domain.util.PageResult<JobOffer> findPublicadas(LocalDate hoy, String sector, String empresa, String tipoContrato, LocalDate fromDate, LocalDate toDate, int page, int size, String sort);
     com.corhuila.egresados.domain.util.PageResult<JobOffer> adminList(String estado, int page, int size);
+    com.corhuila.egresados.domain.util.PageResult<JobOffer> findForGraduates(String estado, String sector, String empresa, String tipoContrato, String search, LocalDate fromDate, LocalDate toDate, int page, int size, String sort);
+    Optional<JobOffer> findByIdForGraduate(UUID id);
 }

@@ -12,33 +12,43 @@ public class EventEntity {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
-    private String titulo;
-    private OffsetDateTime fechaHora;
-    private String lugar;
-    private String enlaceVirtual;
+    @Column(name = "titulo")
+    private String nombre;
     @Column(columnDefinition = "text")
     private String descripcion;
-    private Integer cupos;
-    private Integer cancelacionHoras;
+    @Column(name = "fecha_hora_inicio")
+    private OffsetDateTime fechaHoraInicio;
+    @Column(name = "fecha_hora_fin")
+    private OffsetDateTime fechaHoraFin;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_evento")
+    private Event.TipoEvento tipoEvento;
+    @Column(name = "enlace_conexion")
+    private String enlaceConexion; // si es virtual
+    @Column(name = "lugar_fisico")
+    private String lugarFisico; // si es presencial
+    private Integer capacidad;
     @Enumerated(EnumType.STRING)
     private Event.Estado estado;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
-    public OffsetDateTime getFechaHora() { return fechaHora; }
-    public void setFechaHora(OffsetDateTime fechaHora) { this.fechaHora = fechaHora; }
-    public String getLugar() { return lugar; }
-    public void setLugar(String lugar) { this.lugar = lugar; }
-    public String getEnlaceVirtual() { return enlaceVirtual; }
-    public void setEnlaceVirtual(String enlaceVirtual) { this.enlaceVirtual = enlaceVirtual; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-    public Integer getCupos() { return cupos; }
-    public void setCupos(Integer cupos) { this.cupos = cupos; }
-    public Integer getCancelacionHoras() { return cancelacionHoras; }
-    public void setCancelacionHoras(Integer cancelacionHoras) { this.cancelacionHoras = cancelacionHoras; }
+    public OffsetDateTime getFechaHoraInicio() { return fechaHoraInicio; }
+    public void setFechaHoraInicio(OffsetDateTime fechaHoraInicio) { this.fechaHoraInicio = fechaHoraInicio; }
+    public OffsetDateTime getFechaHoraFin() { return fechaHoraFin; }
+    public void setFechaHoraFin(OffsetDateTime fechaHoraFin) { this.fechaHoraFin = fechaHoraFin; }
+    public Event.TipoEvento getTipoEvento() { return tipoEvento; }
+    public void setTipoEvento(Event.TipoEvento tipoEvento) { this.tipoEvento = tipoEvento; }
+    public String getEnlaceConexion() { return enlaceConexion; }
+    public void setEnlaceConexion(String enlaceConexion) { this.enlaceConexion = enlaceConexion; }
+    public String getLugarFisico() { return lugarFisico; }
+    public void setLugarFisico(String lugarFisico) { this.lugarFisico = lugarFisico; }
+    public Integer getCapacidad() { return capacidad; }
+    public void setCapacidad(Integer capacidad) { this.capacidad = capacidad; }
     public Event.Estado getEstado() { return estado; }
     public void setEstado(Event.Estado estado) { this.estado = estado; }
 }

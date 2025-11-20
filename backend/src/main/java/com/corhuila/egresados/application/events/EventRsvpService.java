@@ -24,9 +24,9 @@ public class EventRsvpService {
         if (e.getEstado() != Event.Estado.PUBLICADA) {
             throw new IllegalStateException("Evento no disponible");
         }
-        if (e.getCupos() != null) {
+        if (e.getCapacidad() != null) {
             long count = repo.countRsvp(eventId);
-            if (count >= e.getCupos()) {
+            if (count >= e.getCapacidad()) {
                 throw new IllegalStateException("Cupos agotados (RN-VT01)");
             }
         }
@@ -43,9 +43,9 @@ public class EventRsvpService {
 
     public void cancel(UUID eventId, UUID graduateId) {
         Event e = repo.findEvent(eventId).orElseThrow();
-        int horas = e.getCancelacionHoras() == null ? 0 : e.getCancelacionHoras();
-        if (e.getFechaHora().minusHours(horas).isBefore(OffsetDateTime.now())) {
-            throw new IllegalStateException("Fuera de ventana de cancelación (RN-VT03)");
+        // Cancelación permitida hasta el inicio del evento
+        if (e.getFechaHoraInicio() != null && e.getFechaHoraInicio().isBefore(OffsetDateTime.now())) {
+            throw new IllegalStateException("Fuera de ventana de cancelación (RN-VT03): Solo antes del inicio del evento");
         }
         repo.deleteRsvp(eventId, graduateId);
         // RN-VT04: notificar primer en lista de espera

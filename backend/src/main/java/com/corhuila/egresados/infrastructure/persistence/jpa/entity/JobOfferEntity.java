@@ -3,7 +3,7 @@ package com.corhuila.egresados.infrastructure.persistence.jpa.entity;
 import com.corhuila.egresados.domain.model.JobOffer;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -13,13 +13,18 @@ public class JobOfferEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
     private String titulo;
+    @Column(columnDefinition = "text")
+    private String descripcion;
     private String empresa;
-    private String sector;
-    private LocalDate fechaCierre;
     private String tipoContrato;
-    private String enlacePostulacion;
-    @Column(length = 1000)
-    private String resumen;
+    private String ciudad;
+    private String modalidad; // PRESENCIAL, REMOTO, HIBRIDO
+    private String rangoSalarial;
+    @Column(name = "fecha_inicio_publicacion")
+    private OffsetDateTime fechaInicioPublicacion;
+    @Column(name = "fecha_fin_publicacion")
+    private OffsetDateTime fechaFinPublicacion;
+    private String sector;
     @Enumerated(EnumType.STRING)
     private JobOffer.Estado estado;
 
@@ -27,18 +32,24 @@ public class JobOfferEntity {
     public void setId(UUID id) { this.id = id; }
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public String getEmpresa() { return empresa; }
     public void setEmpresa(String empresa) { this.empresa = empresa; }
-    public String getSector() { return sector; }
-    public void setSector(String sector) { this.sector = sector; }
-    public LocalDate getFechaCierre() { return fechaCierre; }
-    public void setFechaCierre(LocalDate fechaCierre) { this.fechaCierre = fechaCierre; }
     public String getTipoContrato() { return tipoContrato; }
     public void setTipoContrato(String tipoContrato) { this.tipoContrato = tipoContrato; }
-    public String getEnlacePostulacion() { return enlacePostulacion; }
-    public void setEnlacePostulacion(String enlacePostulacion) { this.enlacePostulacion = enlacePostulacion; }
-    public String getResumen() { return resumen; }
-    public void setResumen(String resumen) { this.resumen = resumen; }
+    public String getCiudad() { return ciudad; }
+    public void setCiudad(String ciudad) { this.ciudad = ciudad; }
+    public String getModalidad() { return modalidad; }
+    public void setModalidad(String modalidad) { this.modalidad = modalidad; }
+    public String getRangoSalarial() { return rangoSalarial; }
+    public void setRangoSalarial(String rangoSalarial) { this.rangoSalarial = rangoSalarial; }
+    public OffsetDateTime getFechaInicioPublicacion() { return fechaInicioPublicacion; }
+    public void setFechaInicioPublicacion(OffsetDateTime fechaInicioPublicacion) { this.fechaInicioPublicacion = fechaInicioPublicacion; }
+    public OffsetDateTime getFechaFinPublicacion() { return fechaFinPublicacion; }
+    public void setFechaFinPublicacion(OffsetDateTime fechaFinPublicacion) { this.fechaFinPublicacion = fechaFinPublicacion; }
+    public String getSector() { return sector; }
+    public void setSector(String sector) { this.sector = sector; }
     public JobOffer.Estado getEstado() { return estado; }
     public void setEstado(JobOffer.Estado estado) { this.estado = estado; }
 }

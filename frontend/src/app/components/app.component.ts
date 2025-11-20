@@ -185,12 +185,12 @@ import { filter } from 'rxjs/operators';
                routerLink="/admin/news" 
                routerLinkActive="active"
                aria-label="Panel de administración">Admin</a>
-          </nav>
+      </nav>
         </div>
-      </header>
+    </header>
       
       <main id="main-content" role="main">
-        <router-outlet></router-outlet>
+    <router-outlet></router-outlet>
       </main>
       
       <footer role="contentinfo">
@@ -199,8 +199,8 @@ import { filter } from 'rxjs/operators';
         </div>
       </footer>
       
-      <app-toasts></app-toasts>
-    </div>
+    <app-toasts></app-toasts>
+  </div>
   `
 })
 export class AppComponent {

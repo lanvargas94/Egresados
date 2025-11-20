@@ -20,12 +20,12 @@ public class AdminEventService {
 
     public Event publish(UUID id) {
         Event e = repo.findEvent(id).orElseThrow();
-        if (e.getFechaHora() == null || e.getFechaHora().isBefore(OffsetDateTime.now()) ||
-                (isBlank(e.getLugar()) && isBlank(e.getEnlaceVirtual()))) {
+        if (e.getFechaHoraInicio() == null || e.getFechaHoraInicio().isBefore(OffsetDateTime.now()) ||
+                (isBlank(e.getLugarFisico()) && isBlank(e.getEnlaceConexion()))) {
             throw new IllegalArgumentException("RN-AV01: fecha futura y lugar/enlace requeridos");
         }
-        if (e.getCupos() != null && e.getCupos() < 1) {
-            throw new IllegalArgumentException("RN-AV02: cupos debe ser ≥ 1");
+        if (e.getCapacidad() != null && e.getCapacidad() < 1) {
+            throw new IllegalArgumentException("RN-AV02: capacidad debe ser ≥ 1");
         }
         e.setEstado(Event.Estado.PUBLICADA);
         return repo.save(e);

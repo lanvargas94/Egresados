@@ -7,7 +7,7 @@ Instalación y ejecución
 1. `cd frontend`
 2. `npm install`
 3. `npm start` (sirve en `http://localhost:4200`)
-   - Asegúrate de tener el backend en `http://localhost:8080` (o ajusta `src/environments/environment.ts`).
+   - Asegúrate de tener el backend en `http://localhost:3001` (o ajusta `src/environments/environment.ts`).
 
 Rutas implementadas
 - `/` Identificación por documento (POST `/api/auth/identify`)

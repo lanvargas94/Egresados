@@ -21,7 +21,17 @@ import java.util.stream.Collectors;
 public class AdminReportsController {
     private final SpringGraduateJpaRepository grads;
     private final ExportLogRepository logs;
-    public AdminReportsController(SpringGraduateJpaRepository grads, ExportLogRepository logs) { this.grads = grads; this.logs = logs; }
+    private final com.corhuila.egresados.application.admin.AdminReportsUseCase reportsUseCase;
+    
+    public AdminReportsController(
+        SpringGraduateJpaRepository grads, 
+        ExportLogRepository logs,
+        com.corhuila.egresados.application.admin.AdminReportsUseCase reportsUseCase
+    ) { 
+        this.grads = grads; 
+        this.logs = logs;
+        this.reportsUseCase = reportsUseCase;
+    }
 
     public record ExportRequest(@NotEmpty List<String> fields,
                                 String facultad, String programa, Integer anio,
@@ -158,5 +168,45 @@ public class AdminReportsController {
                                   @RequestParam(defaultValue = "10") int size) {
         var pg = logs.findAllByOrderByCreatedAtDesc(org.springframework.data.domain.PageRequest.of(page, size));
         return ResponseEntity.ok(java.util.Map.of("items", pg.getContent(), "total", pg.getTotalElements(), "page", page, "size", size));
+    }
+
+    @GetMapping("/graduates-by-program")
+    public ResponseEntity<?> reportGraduatesByProgram() {
+        try {
+            var result = reportsUseCase.reportGraduatesByProgram();
+            return ResponseEntity.ok(Map.of("items", result));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error al generar reporte: " + ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/graduates-by-year")
+    public ResponseEntity<?> reportGraduatesByYear() {
+        try {
+            var result = reportsUseCase.reportGraduatesByYear();
+            return ResponseEntity.ok(Map.of("items", result));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error al generar reporte: " + ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/graduates-by-status")
+    public ResponseEntity<?> reportGraduatesByStatus() {
+        try {
+            var result = reportsUseCase.reportGraduatesByStatus();
+            return ResponseEntity.ok(Map.of("items", result));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error al generar reporte: " + ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/event-registrations")
+    public ResponseEntity<?> reportEventRegistrations() {
+        try {
+            var result = reportsUseCase.reportEventRegistrations();
+            return ResponseEntity.ok(Map.of("items", result));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error al generar reporte: " + ex.getMessage()));
+        }
     }
 }

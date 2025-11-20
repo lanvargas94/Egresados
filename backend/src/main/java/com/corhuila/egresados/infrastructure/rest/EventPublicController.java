@@ -2,7 +2,6 @@ package com.corhuila.egresados.infrastructure.rest;
 
 import com.corhuila.egresados.application.events.EventRsvpService;
 import com.corhuila.egresados.domain.ports.EventRepository;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +14,13 @@ import java.util.UUID;
 public class EventPublicController {
     private final EventRepository repo;
     private final EventRsvpService rsvpService;
+    private final com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringEventWaitlistJpaRepository waitlistRepo;
 
-    public EventPublicController(EventRepository repo, EventRsvpService rsvpService) {
-        this.repo = repo; this.rsvpService = rsvpService;
+    public EventPublicController(EventRepository repo, EventRsvpService rsvpService,
+                                 com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringEventWaitlistJpaRepository waitlistRepo) {
+        this.repo = repo; 
+        this.rsvpService = rsvpService;
+        this.waitlistRepo = waitlistRepo;
     }
 
     @GetMapping
@@ -29,15 +32,17 @@ public class EventPublicController {
         try { var p = (java.security.Principal) null; } catch (Exception ignored) {}
         var items = pg.getItems().stream().map(e -> {
             long count = repo.countRsvp(e.getId());
-            long restantes = e.getCupos() == null ? -1 : Math.max(0, e.getCupos() - count);
+            long restantes = e.getCapacidad() == null ? -1 : Math.max(0, e.getCapacidad() - count);
             java.util.Map<String, Object> m = new java.util.HashMap<>();
             m.put("id", e.getId());
-            m.put("titulo", e.getTitulo());
-            m.put("fechaHora", e.getFechaHora());
-            m.put("lugar", e.getLugar());
-            m.put("enlaceVirtual", e.getEnlaceVirtual());
+            m.put("nombre", e.getNombre());
+            m.put("fechaHoraInicio", e.getFechaHoraInicio());
+            m.put("fechaHoraFin", e.getFechaHoraFin());
+            m.put("lugarFisico", e.getLugarFisico());
+            m.put("enlaceConexion", e.getEnlaceConexion());
+            m.put("tipoEvento", e.getTipoEvento() != null ? e.getTipoEvento().name() : null);
             m.put("descripcion", e.getDescripcion());
-            m.put("cupos", e.getCupos());
+            m.put("capacidad", e.getCapacidad());
             m.put("restantes", restantes);
             // hasRsvp si hay principal
             try {
@@ -68,8 +73,7 @@ public class EventPublicController {
     }
 
     @PostMapping("/{id}/waitlist")
-    public ResponseEntity<?> joinWaitlist(@PathVariable UUID id, java.security.Principal principal,
-                                          com.corhuila.egresados.infrastructure.persistence.jpa.repo.SpringEventWaitlistJpaRepository waitlistRepo) {
+    public ResponseEntity<?> joinWaitlist(@PathVariable UUID id, java.security.Principal principal) {
         java.util.UUID gradId = java.util.UUID.fromString(principal.getName());
         var existing = waitlistRepo.findByEventIdAndGraduateId(id, gradId);
         if (existing.isPresent()) return ResponseEntity.ok(Map.of("ok", true));

@@ -47,6 +47,7 @@ public class ProfileController {
 
     @PutMapping
     public ResponseEntity<?> update(@RequestBody UpdateReq req) {
+        try {
         Graduate g = grads.findById(req.graduateId()).orElseThrow();
         Map<String, String> changes = new LinkedHashMap<>();
 
@@ -85,9 +86,13 @@ public class ProfileController {
         if (req.telefonoMovil() != null && !Objects.equals(req.telefonoMovil(), g.getTelefonoMovilE164())) {
             String countryForPhone = g.getPais();
             if (req.pais() != null) countryForPhone = req.pais();
-            String normalized = catalogService.toE164OrThrow(req.telefonoMovil(), countryForPhone);
-            changes.put("telefono", safe(g.getTelefonoMovilE164()) + " -> " + normalized);
-            g.setTelefonoMovilE164(normalized);
+            try {
+                String normalized = catalogService.toE164OrThrow(req.telefonoMovil(), countryForPhone);
+                changes.put("telefono", safe(g.getTelefonoMovilE164()) + " -> " + normalized);
+                g.setTelefonoMovilE164(normalized);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Teléfono inválido: " + e.getMessage());
+            }
         }
         if (req.situacionLaboral() != null && req.situacionLaboral() != g.getSituacionLaboral()) { changes.put("situacionLaboral", safe(g.getSituacionLaboral()) + " -> " + req.situacionLaboral()); g.setSituacionLaboral(req.situacionLaboral()); }
         if (updateStr(g::getIndustria, g::setIndustria, req.industria(), changes, "industria")) {}
@@ -115,6 +120,11 @@ public class ProfileController {
         return ResponseEntity.ok(Map.of(
                 "ok", true,
                 "requiresEmailConfirmation", changes.containsKey("correoPersonal")));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(400).body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error del servidor. Por favor, intenta de nuevo más tarde."));
+        }
     }
 
     @GetMapping("/history")

@@ -23,7 +23,11 @@ public class NewsRepositoryJpaAdapter implements NewsRepository {
 
     @Override
     public News save(News news) {
-        throw new UnsupportedOperationException("Pendiente: CRUD Admin de noticias");
+        var entity = jpa.findById(news.getId())
+                .orElse(new com.corhuila.egresados.infrastructure.persistence.jpa.entity.NewsEntity());
+        NewsMapper.updateEntity(news, entity);
+        var saved = jpa.save(entity);
+        return NewsMapper.toDomain(saved);
     }
 
     @Override

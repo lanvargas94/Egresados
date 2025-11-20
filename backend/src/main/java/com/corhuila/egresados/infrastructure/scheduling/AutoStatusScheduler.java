@@ -37,7 +37,7 @@ public class AutoStatusScheduler {
     public void finalizeEvents() {
         var toFinalize = events.findToFinalize(OffsetDateTime.now());
         for (var e : toFinalize) {
-            if (e.getEstado() == Event.Estado.PUBLICADA && e.getFechaHora() != null && e.getFechaHora().isBefore(OffsetDateTime.now())) {
+            if (e.getEstado() == Event.Estado.PUBLICADA && e.getFechaHoraFin() != null && e.getFechaHoraFin().isBefore(OffsetDateTime.now())) {
                 e.setEstado(Event.Estado.FINALIZADA); events.save(e);
             }
         }

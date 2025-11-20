@@ -12,3 +12,5 @@ El logo de CORHUILA debe guardarse aquí como:
 
 El logo se mostrará automáticamente en la página de ingreso de la plataforma.
 
+
+

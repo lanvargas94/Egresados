@@ -9,26 +9,28 @@ public class EventMapper {
     public static Event toDomain(EventEntity e) {
         Event ev = new Event();
         ev.setId(e.getId());
-        ev.setTitulo(e.getTitulo());
-        ev.setFechaHora(e.getFechaHora());
-        ev.setLugar(e.getLugar());
-        ev.setEnlaceVirtual(e.getEnlaceVirtual());
+        ev.setNombre(e.getNombre() != null ? e.getNombre() : "Sin nombre");
         ev.setDescripcion(e.getDescripcion());
-        ev.setCupos(e.getCupos());
-        ev.setCancelacionHoras(e.getCancelacionHoras());
+        ev.setFechaHoraInicio(e.getFechaHoraInicio());
+        ev.setFechaHoraFin(e.getFechaHoraFin());
+        ev.setTipoEvento(e.getTipoEvento() != null ? e.getTipoEvento() : Event.TipoEvento.PRESENCIAL);
+        ev.setEnlaceConexion(e.getEnlaceConexion());
+        ev.setLugarFisico(e.getLugarFisico());
+        ev.setCapacidad(e.getCapacidad());
         ev.setEstado(e.getEstado());
         return ev;
     }
 
     public static void updateEntity(Event ev, EventEntity e) {
         e.setId(ev.getId());
-        e.setTitulo(ev.getTitulo());
-        e.setFechaHora(ev.getFechaHora());
-        e.setLugar(ev.getLugar());
-        e.setEnlaceVirtual(ev.getEnlaceVirtual());
+        e.setNombre(ev.getNombre());
         e.setDescripcion(ev.getDescripcion());
-        e.setCupos(ev.getCupos());
-        e.setCancelacionHoras(ev.getCancelacionHoras());
+        e.setFechaHoraInicio(ev.getFechaHoraInicio());
+        e.setFechaHoraFin(ev.getFechaHoraFin());
+        e.setTipoEvento(ev.getTipoEvento());
+        e.setEnlaceConexion(ev.getEnlaceConexion());
+        e.setLugarFisico(ev.getLugarFisico());
+        e.setCapacidad(ev.getCapacidad());
         e.setEstado(ev.getEstado());
     }
 

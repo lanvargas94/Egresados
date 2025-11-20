@@ -8,6 +8,7 @@ import { onboardingGuard } from './guards/onboarding.guard';
 import { ConfirmEmailComponent } from './components/confirm-email.component';
 import { NewsListComponent } from './components/news-list.component';
 import { JobsListComponent } from './components/jobs-list.component';
+import { JobDetailComponent } from './components/job-detail.component';
 import { EventsListComponent } from './components/events-list.component';
 import { LoginOtpComponent } from './components/login-otp.component';
 import { AdminLoginComponent } from './components/admin-login.component';
@@ -24,33 +25,61 @@ import { AdminExportHistoryComponent } from './components/admin-export-history.c
 import { ProfileComponent } from './components/profile.component';
 import { AdminSectorsComponent } from './components/admin-sectors.component';
 import { AdminContractTypesComponent } from './components/admin-contract-types.component';
+import { AdminGraduatesListComponent } from './components/admin-graduates-list.component';
+import { AdminGraduateDetailComponent } from './components/admin-graduate-detail.component';
+import { AdminLayoutComponent } from './components/admin-layout.component';
+import { AdminBannersListComponent } from './components/admin-banners-list.component';
+import { AdminBannersFormComponent } from './components/admin-banners-form.component';
+import { AdminUsersListComponent } from './components/admin-users-list.component';
+import { AdminUsersFormComponent } from './components/admin-users-form.component';
+import { AdminCatalogsComponent } from './components/admin-catalogs.component';
+import { AdminAuditLogComponent } from './components/admin-audit-log.component';
 
 export const appRoutes: Routes = [
   { path: '', component: IdentificationComponent },
   { path: 'confirmar', component: ConfirmEmailComponent },
   { path: 'login', component: LoginOtpComponent },
   { path: 'admin/login', component: AdminLoginComponent },
-  { path: 'admin/news', component: AdminNewsListComponent, canActivate: [adminGuard] },
-  { path: 'admin/news/new', component: AdminNewsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/news/:id', component: AdminNewsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/jobs', component: AdminJobsListComponent, canActivate: [adminGuard] },
-  { path: 'admin/jobs/new', component: AdminJobsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/jobs/:id', component: AdminJobsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/events', component: AdminEventsListComponent, canActivate: [adminGuard] },
-  { path: 'admin/events/new', component: AdminEventsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/events/:id', component: AdminEventsFormComponent, canActivate: [adminGuard] },
-  { path: 'admin/analytics', component: AdminAnalyticsComponent, canActivate: [adminGuard] },
-  { path: 'admin/reports', component: AdminReportsComponent, canActivate: [adminGuard] },
-  { path: 'admin/reports/history', component: AdminExportHistoryComponent, canActivate: [adminGuard] },
+  {
+    path: 'admin',
+    component: AdminLayoutComponent,
+    canActivate: [adminGuard],
+    children: [
+      { path: 'graduates', component: AdminGraduatesListComponent },
+      { path: 'graduates/:id', component: AdminGraduateDetailComponent },
+      { path: 'news', component: AdminNewsListComponent },
+      { path: 'news/new', component: AdminNewsFormComponent },
+      { path: 'news/:id', component: AdminNewsFormComponent },
+      { path: 'jobs', component: AdminJobsListComponent },
+      { path: 'jobs/new', component: AdminJobsFormComponent },
+      { path: 'jobs/:id', component: AdminJobsFormComponent },
+      { path: 'events', component: AdminEventsListComponent },
+      { path: 'events/new', component: AdminEventsFormComponent },
+      { path: 'events/:id', component: AdminEventsFormComponent },
+      { path: 'analytics', component: AdminAnalyticsComponent },
+      { path: 'reports', component: AdminReportsComponent },
+      { path: 'reports/history', component: AdminExportHistoryComponent },
+      { path: 'banners', component: AdminBannersListComponent },
+      { path: 'banners/new', component: AdminBannersFormComponent },
+      { path: 'banners/:id', component: AdminBannersFormComponent },
+      { path: 'users', component: AdminUsersListComponent },
+      { path: 'users/new', component: AdminUsersFormComponent },
+      { path: 'users/:id', component: AdminUsersFormComponent },
+      { path: 'catalog', component: AdminCatalogsComponent },
+      { path: 'catalog/sectors', component: AdminSectorsComponent },
+      { path: 'catalog/contract-types', component: AdminContractTypesComponent },
+      { path: 'audit', component: AdminAuditLogComponent },
+      { path: '', redirectTo: 'graduates', pathMatch: 'full' }
+    ]
+  },
   { path: 'profile', component: ProfileComponent, canActivate: [onboardingGuard] },
-  { path: 'admin/catalog/sectors', component: AdminSectorsComponent, canActivate: [adminGuard] },
-  { path: 'admin/catalog/contract-types', component: AdminContractTypesComponent, canActivate: [adminGuard] },
   { path: 'onboarding/step1', component: OnboardingStep1Component, canActivate: [onboardingGuard] },
   { path: 'onboarding/step2', component: OnboardingStep2Component, canActivate: [onboardingGuard] },
   { path: 'onboarding/step3', component: OnboardingStep3Component, canActivate: [onboardingGuard] },
   { path: 'panel', component: PanelComponent, canActivate: [onboardingGuard] },
   { path: 'news', component: NewsListComponent, canActivate: [onboardingGuard] },
   { path: 'jobs', component: JobsListComponent, canActivate: [onboardingGuard] },
+  { path: 'jobs/:id', component: JobDetailComponent, canActivate: [onboardingGuard] },
   { path: 'events', component: EventsListComponent, canActivate: [onboardingGuard] },
   { path: '**', redirectTo: '' }
 ];

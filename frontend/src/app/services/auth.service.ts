@@ -7,6 +7,7 @@ interface IdentifyResponse {
   graduateId?: string;
   nombre?: string;
   mensaje?: string;
+  token?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +22,9 @@ export class AuthService {
         }
         if (res.nombre) {
           localStorage.setItem('graduateNombre', res.nombre);
+        }
+        if (res.token) {
+          localStorage.setItem('gradToken', res.token);
         }
       })
     );

@@ -2,11 +2,12 @@ package com.corhuila.egresados.infrastructure.persistence.jpa.repo;
 
 import com.corhuila.egresados.infrastructure.persistence.jpa.entity.GraduateEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Optional;
 import java.util.UUID;
 
-public interface SpringGraduateJpaRepository extends JpaRepository<GraduateEntity, UUID> {
+public interface SpringGraduateJpaRepository extends JpaRepository<GraduateEntity, UUID>, JpaSpecificationExecutor<GraduateEntity> {
     Optional<GraduateEntity> findByIdentificacion(String identificacion);
 
     @org.springframework.data.jpa.repository.Query("select g from GraduateEntity g left join fetch g.programas where g.id = :id")

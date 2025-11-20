@@ -141,7 +141,7 @@ import { ToastService } from '../services/toast.service';
             <div *ngIf="mensaje" class="error" role="alert" style="margin-top: var(--spacing-md);">
               {{mensaje}}
             </div>
-          </form>
+      </form>
           
           <div class="help-text">
             <strong>¿Necesitas ayuda?</strong>
@@ -149,8 +149,8 @@ import { ToastService } from '../services/toast.service';
             Si tienes problemas, contacta al área de Registro.
           </div>
         </div>
-      </div>
     </div>
+  </div>
   `
 })
 export class IdentificationComponent {

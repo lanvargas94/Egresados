@@ -2,12 +2,9 @@ package com.corhuila.egresados.infrastructure.rest;
 
 import com.corhuila.egresados.application.jobs.AdminJobOfferService;
 import com.corhuila.egresados.domain.model.JobOffer;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,26 +18,44 @@ public class AdminJobController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody JobOffer job) {
-        job.setId(null);
-        job.setEstado(JobOffer.Estado.BORRADOR);
-        var saved = service.create(job);
-        audit.log("CREATE","JobOffer", saved.getId().toString(), saved.getTitulo());
-        return ResponseEntity.ok(saved);
+        try {
+            job.setId(null);
+            job.setEstado(JobOffer.Estado.BORRADOR);
+            var saved = service.create(job);
+            audit.log("CREATE","JobOffer", saved.getId().toString(), saved.getTitulo());
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Error del servidor: " + ex.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody JobOffer job) {
-        job.setId(id);
-        var saved = service.update(job);
-        audit.log("UPDATE","JobOffer", saved.getId().toString(), saved.getTitulo());
-        return ResponseEntity.ok(saved);
+        try {
+            job.setId(id);
+            var saved = service.update(job);
+            audit.log("UPDATE","JobOffer", saved.getId().toString(), saved.getTitulo());
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Error del servidor: " + ex.getMessage()));
+        }
     }
 
     @PostMapping("/{id}/publish")
     public ResponseEntity<?> publish(@PathVariable UUID id) {
-        var saved = service.publish(id);
-        audit.log("PUBLISH","JobOffer", saved.getId().toString(), saved.getTitulo());
-        return ResponseEntity.ok(saved);
+        try {
+            var saved = service.publish(id);
+            audit.log("PUBLISH","JobOffer", saved.getId().toString(), saved.getTitulo());
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Error del servidor: " + ex.getMessage()));
+        }
     }
 
     @PostMapping("/{id}/archive")
@@ -69,5 +84,26 @@ public class AdminJobController {
     @GetMapping("/{id}")
     public ResponseEntity<?> get(@PathVariable UUID id) {
         return ResponseEntity.ok(repo.findById(id).orElseThrow());
+    }
+
+    @PostMapping("/{id}/expire")
+    public ResponseEntity<?> expire(@PathVariable UUID id) {
+        var saved = service.expire(id);
+        audit.log("EXPIRE","JobOffer", saved.getId().toString(), saved.getTitulo());
+        return ResponseEntity.ok(saved);
+    }
+
+    @PostMapping("/{id}/close")
+    public ResponseEntity<?> close(@PathVariable UUID id) {
+        var saved = service.close(id);
+        audit.log("CLOSE","JobOffer", saved.getId().toString(), saved.getTitulo());
+        return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<?> getStats(@PathVariable UUID id) {
+        // Obtener estadísticas básicas de interés en la oferta
+        // Por ahora, devolver un contador simple (se puede expandir)
+        return ResponseEntity.ok(java.util.Map.of("interesados", 0)); // TODO: implementar contador de interesados
     }
 }

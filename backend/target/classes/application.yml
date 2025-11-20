@@ -37,4 +37,4 @@ springdoc:
 
 app:
   mailFrom: ${MAIL_FROM:no-reply@egresados.local}
-  confirmUrl: ${APP_CONFIRM_URL:http://localhost:8080/api/profile/confirm-email?token=}
+  confirmUrl: ${APP_CONFIRM_URL:http://localhost:3001/api/profile/confirm-email?token=}

@@ -40,6 +40,12 @@ public class Graduate {
     private boolean consentimientoDatos;
     private boolean onboardingCompleto;
 
+    // Estado del egresado (para administrador)
+    private GraduateStatus estado = GraduateStatus.ACTIVO;
+    
+    // Observaciones internas (solo para administradores)
+    private String observacionesInternas;
+
     // Trazabilidad
     private OffsetDateTime creadoEn;
     private OffsetDateTime actualizadoEn;
@@ -114,4 +120,10 @@ public class Graduate {
 
     public OffsetDateTime getActualizadoEn() { return actualizadoEn; }
     public void setActualizadoEn(OffsetDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
+
+    public GraduateStatus getEstado() { return estado; }
+    public void setEstado(GraduateStatus estado) { this.estado = estado; }
+
+    public String getObservacionesInternas() { return observacionesInternas; }
+    public void setObservacionesInternas(String observacionesInternas) { this.observacionesInternas = observacionesInternas; }
 }

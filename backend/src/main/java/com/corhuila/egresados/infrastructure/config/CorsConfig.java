@@ -12,18 +12,37 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
     @Bean
-    public CorsFilter corsFilter(@Value("${FRONT_ORIGIN:http://localhost:8080}") String frontOrigin) {
+    public CorsFilter corsFilter(@Value("${FRONT_ORIGIN:http://localhost:3002}") String frontOrigin) {
         CorsConfiguration config = new CorsConfiguration();
         // Permitir múltiples orígenes para desarrollo
         config.setAllowedOrigins(List.of(
-            frontOrigin,
-            "http://localhost:8080",
-            "http://localhost:4200",
-            "http://127.0.0.1:8080",
-            "http://127.0.0.1:4200"
+                frontOrigin,
+                "http://localhost:3002",
+                "http://localhost:3001",
+                "http://localhost:3000",
+                "http://localhost:8080",
+                "http://localhost:4200",
+                "http://127.0.0.1:3002",
+                "http://127.0.0.1:3001",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:4200",
+                "http://[::1]:3002",
+                "http://[::1]:3001",
+                "http://[::1]:3000",
+                "http://[::1]:8080",
+                "http://[::1]:4200"
         ));
-        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
-        config.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
+        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH","HEAD"));
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+        ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

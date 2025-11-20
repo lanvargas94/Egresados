@@ -34,6 +34,8 @@ public class GraduateMapper {
         g.setCorreoVerificado(e.isCorreoVerificado());
         g.setConsentimientoDatos(e.isConsentimientoDatos());
         g.setOnboardingCompleto(e.isOnboardingCompleto());
+        g.setEstado(e.getEstado());
+        g.setObservacionesInternas(e.getObservacionesInternas());
         g.setCreadoEn(e.getCreadoEn());
         g.setActualizadoEn(e.getActualizadoEn());
         List<Program> programs = new ArrayList<>();
@@ -69,6 +71,8 @@ public class GraduateMapper {
         e.setCorreoVerificado(g.isCorreoVerificado());
         e.setConsentimientoDatos(g.isConsentimientoDatos());
         e.setOnboardingCompleto(g.isOnboardingCompleto());
+        e.setEstado(g.getEstado());
+        e.setObservacionesInternas(g.getObservacionesInternas());
         e.setCreadoEn(g.getCreadoEn());
         e.setActualizadoEn(g.getActualizadoEn());
 

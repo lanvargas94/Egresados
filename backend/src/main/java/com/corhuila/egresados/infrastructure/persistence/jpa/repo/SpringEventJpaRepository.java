@@ -11,15 +11,15 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SpringEventJpaRepository extends JpaRepository<EventEntity, UUID> {
-    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHora >= :ahora order by e.fechaHora asc")
+    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHoraInicio >= :ahora order by e.fechaHoraInicio asc")
     List<EventEntity> findPublicados(OffsetDateTime ahora);
 
-    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHora < :ahora")
+    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHoraInicio < :ahora")
     List<EventEntity> findToFinalize(OffsetDateTime ahora);
 
-    @Query("select e from EventEntity e where (:estado is null or e.estado = :estado) order by e.fechaHora desc")
+    @Query("select e from EventEntity e where (:estado is null or e.estado = :estado) order by e.fechaHoraInicio desc")
     Page<EventEntity> adminList(String estado, Pageable pageable);
 
-    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHora >= :ahora order by e.fechaHora asc")
+    @Query("select e from EventEntity e where e.estado = 'PUBLICADA' and e.fechaHoraInicio >= :ahora order by e.fechaHoraInicio asc")
     Page<EventEntity> findPublicados(OffsetDateTime ahora, Pageable pageable);
 }

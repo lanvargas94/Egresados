@@ -1,6 +1,7 @@
 package com.corhuila.egresados.infrastructure.persistence.jpa.entity;
 
 import com.corhuila.egresados.domain.model.EmploymentStatus;
+import com.corhuila.egresados.domain.model.GraduateStatus;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
@@ -49,6 +50,12 @@ public class GraduateEntity {
 
     private boolean consentimientoDatos;
     private boolean onboardingCompleto;
+
+    // Estado y observaciones para administrador
+    @Enumerated(EnumType.STRING)
+    private GraduateStatus estado = GraduateStatus.ACTIVO;
+    @Column(name = "observaciones_internas", columnDefinition = "text")
+    private String observacionesInternas;
 
     private OffsetDateTime creadoEn;
     private OffsetDateTime actualizadoEn;
@@ -106,4 +113,8 @@ public class GraduateEntity {
     public void setActualizadoEn(OffsetDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
     public List<ProgramEntity> getProgramas() { return programas; }
     public void setProgramas(List<ProgramEntity> programas) { this.programas = programas; }
+    public GraduateStatus getEstado() { return estado; }
+    public void setEstado(GraduateStatus estado) { this.estado = estado; }
+    public String getObservacionesInternas() { return observacionesInternas; }
+    public void setObservacionesInternas(String observacionesInternas) { this.observacionesInternas = observacionesInternas; }
 }

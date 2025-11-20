@@ -17,11 +17,20 @@ public class CatalogController {
     private final CityRepository cities;
     private final com.corhuila.egresados.infrastructure.catalog.repo.FacultyRepository faculties;
     private final com.corhuila.egresados.infrastructure.catalog.repo.ProgramCatalogRepository programs;
+    private final com.corhuila.egresados.infrastructure.catalog.repo.SectorRepository sectorRepo;
+    private final com.corhuila.egresados.infrastructure.catalog.repo.ContractTypeRepository contractTypeRepo;
 
     public CatalogController(CountryRepository countries, CityRepository cities,
                              com.corhuila.egresados.infrastructure.catalog.repo.FacultyRepository faculties,
-                             com.corhuila.egresados.infrastructure.catalog.repo.ProgramCatalogRepository programs) {
-        this.countries = countries; this.cities = cities; this.faculties = faculties; this.programs = programs;
+                             com.corhuila.egresados.infrastructure.catalog.repo.ProgramCatalogRepository programs,
+                             com.corhuila.egresados.infrastructure.catalog.repo.SectorRepository sectorRepo,
+                             com.corhuila.egresados.infrastructure.catalog.repo.ContractTypeRepository contractTypeRepo) {
+        this.countries = countries; 
+        this.cities = cities; 
+        this.faculties = faculties; 
+        this.programs = programs;
+        this.sectorRepo = sectorRepo;
+        this.contractTypeRepo = contractTypeRepo;
     }
 
     @GetMapping("/countries")
@@ -57,14 +66,14 @@ public class CatalogController {
     }
 
     @GetMapping("/sectors")
-    public ResponseEntity<?> sectors(com.corhuila.egresados.infrastructure.catalog.repo.SectorRepository sectorRepo) {
+    public ResponseEntity<?> sectors() {
         var list = sectorRepo.findAll().stream().filter(s -> s.isActive()).map(s -> s.getName()).sorted().toList();
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(java.util.Map.of("items", list));
     }
 
     @GetMapping("/contract-types")
-    public ResponseEntity<?> contractTypes(com.corhuila.egresados.infrastructure.catalog.repo.ContractTypeRepository repo) {
-        var list = repo.findAll().stream().filter(ct -> ct.isActive()).map(ct -> ct.getName()).sorted().toList();
-        return ResponseEntity.ok(list);
+    public ResponseEntity<?> contractTypes() {
+        var list = contractTypeRepo.findAll().stream().filter(ct -> ct.isActive()).map(ct -> ct.getName()).sorted().toList();
+        return ResponseEntity.ok(java.util.Map.of("items", list));
     }
 }

@@ -148,17 +148,31 @@ import { CatalogService } from '../services/catalog.service';
       
       <div class="news-grid">
         <div *ngFor="let n of items" class="news-card">
-      <h3>{{n.titulo}}</h3>
-      <p>{{n.resumen}}</p>
-          <a 
-            *ngIf="n.enlaceExterno" 
-            [href]="n.enlaceExterno" 
-            target="_blank"
-            rel="noopener noreferrer"
-            class="news-link">
-            <span>Leer más</span>
-            <span>→</span>
-          </a>
+          <h3>{{n.titulo}}</h3>
+          <p>{{n.resumen}}</p>
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+            <a 
+              *ngIf="n.enlaceExterno" 
+              [href]="n.enlaceExterno" 
+              target="_blank"
+              rel="noopener noreferrer"
+              class="news-link">
+              <span>Leer más</span>
+              <span>→</span>
+            </a>
+            <a 
+              *ngIf="n.adjuntoUrl" 
+              [href]="n.adjuntoUrl" 
+              target="_blank"
+              rel="noopener noreferrer"
+              class="news-link"
+              style="color: #666;">
+              <span>📎 Descargar adjunto</span>
+            </a>
+            <small *ngIf="n.fechaPublicacion" style="color: #999; margin-top: 0.5rem;">
+              Publicado: {{formatDate(n.fechaPublicacion)}}
+            </small>
+          </div>
         </div>
       </div>
       
@@ -189,4 +203,18 @@ export class NewsListComponent implements OnInit {
   reload() { this.items = []; this.page = 0; this.load(); }
   onFacultyChange(faculty:string){ this.programs=[]; this.f.patchValue({programa: ''}); if(faculty){ this.catalog.programs(faculty).subscribe((res:any)=> this.programs = res); }
     }
+  
+  formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
+  }
 }

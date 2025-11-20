@@ -1,6 +1,5 @@
 package com.corhuila.egresados.infrastructure.persistence.jpa.repo;
 
-import com.corhuila.egresados.domain.model.News;
 import com.corhuila.egresados.infrastructure.persistence.jpa.entity.NewsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +23,6 @@ public interface SpringNewsJpaRepository extends JpaRepository<NewsEntity, UUID>
     @Query("select n from NewsEntity n where n.estado = 'PROGRAMADA' and n.fechaPublicacion <= :ahora")
     List<NewsEntity> findToAutoPublish(OffsetDateTime ahora);
 
-    @Query("select n from NewsEntity n where (:estado is null or n.estado = :estado) order by n.fechaPublicacion desc nulls last")
-    Page<NewsEntity> adminList(String estado, Pageable pageable);
+    @Query("select n from NewsEntity n where (:estadoStr IS NULL OR n.estado = :estadoStr) order by n.fechaPublicacion desc nulls last")
+    Page<NewsEntity> adminList(String estadoStr, Pageable pageable);
 }
