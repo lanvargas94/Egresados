@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/reports")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "14. Administración - Reportes", description = "Generación de reportes predefinidos y exportación de datos de egresados (CSV/Excel)")
 public class AdminReportsController {
     private final SpringGraduateJpaRepository grads;
     private final ExportLogRepository logs;

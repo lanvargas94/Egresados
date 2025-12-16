@@ -15,6 +15,7 @@ public interface EventRepository {
     List<Event> findToFinalize(OffsetDateTime ahora);
     com.corhuila.egresados.domain.util.PageResult<Event> adminList(String estado, int page, int size);
     com.corhuila.egresados.domain.util.PageResult<Event> findPublicados(OffsetDateTime ahora, int page, int size);
+    void delete(UUID id);
 
     EventRsvp saveRsvp(EventRsvp rsvp);
     Optional<EventRsvp> findRsvp(UUID eventId, UUID graduateId);

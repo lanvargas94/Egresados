@@ -74,9 +74,20 @@ public class AdminReportsUseCase {
             .collect(Collectors.toList());
     }
 
-    // Conteo de inscritos por evento
+    // Conteo de inscritos por evento (solo eventos del año actual)
     public List<Map<String, Object>> reportEventRegistrations() {
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        int currentYear = now.getYear();
+        java.time.OffsetDateTime yearStart = java.time.OffsetDateTime.of(currentYear, 1, 1, 0, 0, 0, 0, now.getOffset());
+        java.time.OffsetDateTime yearEnd = java.time.OffsetDateTime.of(currentYear, 12, 31, 23, 59, 59, 999999999, now.getOffset());
+        
         return eventJpa.findAll().stream()
+            .filter(e -> {
+                // Filtrar eventos que tengan fecha de inicio en el año actual
+                if (e.getFechaHoraInicio() == null) return false;
+                java.time.OffsetDateTime fechaInicio = e.getFechaHoraInicio();
+                return !fechaInicio.isBefore(yearStart) && !fechaInicio.isAfter(yearEnd);
+            })
             .map(e -> {
                 long count = rsvpJpa.countByEventId(e.getId());
                 Map<String, Object> item = new HashMap<>();
@@ -91,7 +102,14 @@ public class AdminReportsUseCase {
                 }
                 item.put("eventoNombre", nombre != null ? nombre : "Sin nombre");
                 item.put("inscritos", count);
+                item.put("fechaInicio", e.getFechaHoraInicio());
                 return item;
+            })
+            .sorted((a, b) -> {
+                // Ordenar por número de inscritos descendente
+                Long inscritosA = (Long) a.get("inscritos");
+                Long inscritosB = (Long) b.get("inscritos");
+                return inscritosB.compareTo(inscritosA);
             })
             .collect(Collectors.toList());
     }

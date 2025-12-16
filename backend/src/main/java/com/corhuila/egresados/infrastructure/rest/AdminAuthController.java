@@ -2,6 +2,12 @@ package com.corhuila.egresados.infrastructure.rest;
 
 import com.corhuila.egresados.domain.ports.AdminUserRepository;
 import com.corhuila.egresados.infrastructure.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/auth")
+@Tag(name = "02. Autenticación de Administradores", description = "Login y gestión de sesiones para usuarios administradores")
 public class AdminAuthController {
     private final AuthenticationManager authManager;
     private final JwtUtil jwt;
@@ -31,6 +38,29 @@ public class AdminAuthController {
 
     public record LoginReq(@NotBlank String username, @NotBlank String password) {}
 
+    @Operation(
+            summary = "Login de administrador",
+            description = "Autentica un usuario administrador y retorna un token JWT. Los roles disponibles son ADMIN_GENERAL y ADMIN_PROGRAMA."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login exitoso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                                        "role": "ADMIN_GENERAL",
+                                        "userId": "123e4567-e89b-12d3-a456-426614174000",
+                                        "nombre": "Administrador Principal"
+                                    }
+                                    """)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
+            @ApiResponse(responseCode = "500", description = "Error del servidor")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginReq req) {
         try {

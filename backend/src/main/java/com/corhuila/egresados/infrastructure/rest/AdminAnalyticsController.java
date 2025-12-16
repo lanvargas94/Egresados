@@ -14,6 +14,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin/analytics")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "13. Administración - Analytics", description = "Estadísticas y métricas: demografía, empleabilidad y adopción de la plataforma")
 public class AdminAnalyticsController {
     private final SpringGraduateJpaRepository grads;
 

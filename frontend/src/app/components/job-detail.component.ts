@@ -148,9 +148,15 @@ export class JobDetailComponent implements OnInit {
   markInterested() {
     if (!this.job || this.job.estado !== 'PUBLICADA') return;
     
-    // TODO: Implementar lógica para marcar como interesado
-    // Por ahora solo mostramos un mensaje
-    this.toast.success('Has marcado esta oferta como de tu interés');
+    this.api.post(`/jobs/${this.job.id}/interest`, {}).subscribe({
+      next: () => {
+        this.toast.success('Has marcado esta oferta como de tu interés');
+      },
+      error: (err: any) => {
+        const msg = err.error?.error || 'Error al marcar interés';
+        this.toast.error(msg);
+      }
+    });
   }
 
   getEstadoClass(estado: string): string {

@@ -1,7 +1,9 @@
 package com.corhuila.egresados.infrastructure.persistence.mapper;
 
 import com.corhuila.egresados.domain.model.JobOffer;
+import com.corhuila.egresados.domain.model.JobInterest;
 import com.corhuila.egresados.infrastructure.persistence.jpa.entity.JobOfferEntity;
+import com.corhuila.egresados.infrastructure.persistence.jpa.entity.JobInterestEntity;
 
 public class JobOfferMapper {
     public static JobOffer toDomain(JobOfferEntity e) {
@@ -34,6 +36,22 @@ public class JobOfferMapper {
         e.setFechaFinPublicacion(j.getFechaFinPublicacion());
         e.setSector(j.getSector());
         e.setEstado(j.getEstado());
+    }
+
+    public static JobInterest toDomain(JobInterestEntity e) {
+        JobInterest j = new JobInterest();
+        j.setId(e.getId());
+        j.setJobOfferId(e.getJobOfferId());
+        j.setGraduateId(e.getGraduateId());
+        j.setCreatedAt(e.getCreatedAt());
+        return j;
+    }
+
+    public static void updateEntity(JobInterest j, JobInterestEntity e) {
+        e.setId(j.getId());
+        e.setJobOfferId(j.getJobOfferId());
+        e.setGraduateId(j.getGraduateId());
+        e.setCreatedAt(j.getCreatedAt());
     }
 }
 

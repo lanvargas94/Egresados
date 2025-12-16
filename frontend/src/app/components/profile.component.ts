@@ -160,8 +160,7 @@ import { ToastService } from '../services/toast.service';
                 <label for="pais">País</label>
                 <select 
                   id="pais"
-                  formControlName="pais" 
-                  (change)="onCountryChange($event.target.value)">
+                  formControlName="pais">
                   <option value="">Seleccione un país...</option>
                   <option *ngFor="let c of countries" [value]="c.code">
                     {{c.name}} ({{c.code}})
@@ -174,12 +173,24 @@ import { ToastService } from '../services/toast.service';
                 <select 
                   id="ciudad"
                   formControlName="ciudad"
-                  [disabled]="!f.value.pais">
-                  <option value="">Seleccione una ciudad...</option>
+                  [disabled]="!f.value.pais || loadingCities">
+                  <option value="">{{loadingCities ? 'Cargando ciudades...' : 'Seleccione una ciudad...'}}</option>
                   <option *ngFor="let city of cities" [value]="city">
                     {{city}}
                   </option>
         </select>
+                <small *ngIf="!f.value.pais" style="color: #666; display: block; margin-top: 0.25rem;">
+                  Primero seleccione un país
+                </small>
+                <small *ngIf="f.value.pais && cities.length === 0 && !loadingCities" style="color: #ff6b6b; display: block; margin-top: 0.25rem;">
+                  ⚠️ No hay ciudades disponibles para este país. Verifique que el país tenga ciudades en el catálogo.
+                </small>
+                <small *ngIf="f.value.pais && loadingCities" style="color: #666; display: block; margin-top: 0.25rem;">
+                  Cargando ciudades...
+                </small>
+                <small *ngIf="f.value.pais && cities.length > 0" style="color: #4caf50; display: block; margin-top: 0.25rem;">
+                  ✓ {{cities.length}} ciudad(es) disponible(s)
+                </small>
               </div>
             </div>
           </div>
@@ -341,7 +352,7 @@ import { ToastService } from '../services/toast.service';
 export class ProfileComponent implements OnInit {
   f = this.fb.group({ correoPersonal:['',[Validators.email]], pais:[''], ciudad:[''], telefonoMovil:[''], situacionLaboral:[''], industria:[''], empresa:[''], cargo:[''] });
   prefs:any = { aporteMentoria:false, aporteOfertas:false, aporteConferencista:false, intNoticiasFacultad:false, intEventosCiudad:false, intOfertasSector:false, intPosgrados:false };
-  countries:any[]=[]; cities:string[]=[]; saving=false; history:any[]=[];
+  countries:any[]=[]; cities:string[]=[]; saving=false; history:any[]=[]; loadingCities=false;
   constructor(private fb: FormBuilder, private profile: ProfileService, private catalog: CatalogService, private toast: ToastService) {}
   ngOnInit(){ 
     const id = localStorage.getItem('graduateId'); 
@@ -354,8 +365,27 @@ export class ProfileComponent implements OnInit {
       this.toast.error('Token de autenticación no encontrado. Por favor, identifícate nuevamente.');
       return;
     }
+    // Cargar países primero
+    this.catalog.countries().subscribe((cs:any)=> this.countries = cs); 
+    
+    // Suscribirse a cambios en el campo país usando valueChanges (más confiable que el evento change)
+    let skipFirstChange = true;
+    this.f.get('pais')?.valueChanges.subscribe((countryCode: string | null) => {
+      if (skipFirstChange) {
+        skipFirstChange = false;
+        // En la carga inicial, cargar ciudades si hay un país
+        if (countryCode) {
+          setTimeout(() => this.loadCitiesForCountry(countryCode), 200);
+        }
+      } else {
+        // Para cambios del usuario, cargar ciudades inmediatamente
+        this.onCountryChange(countryCode);
+      }
+    });
+    
     this.profile.getProfile(id).subscribe({
       next: (p:any)=>{ 
+        // patchValue disparará valueChanges, que manejará la carga de ciudades
         this.f.patchValue({ 
           correoPersonal:p.correoPersonal, 
           pais:p.pais, 
@@ -374,19 +404,88 @@ export class ProfileComponent implements OnInit {
           intEventosCiudad: !!p.intEventosCiudad, 
           intOfertasSector: !!p.intOfertasSector, 
           intPosgrados: !!p.intPosgrados 
-        }; 
+        };
       },
       error: (err) => {
         this.toast.error(err?.error?.error || 'Error al cargar el perfil. Verifica tu sesión.');
       }
     }); 
-    this.catalog.countries().subscribe((cs:any)=> this.countries = cs); 
     this.profile.history(id).subscribe({
       next: (hs:any)=> this.history = hs,
       error: () => {} // Silenciar error de historial si falla
-    }); 
+    });
   }
-  onCountryChange(code:string){ this.cities=[]; if(code){ this.catalog.cities(code).subscribe((res:any)=> this.cities=res); this.f.patchValue({ ciudad: '' }); } }
+  
+  onCountryChange(code: string | null) {
+    console.log('Cambio de país detectado:', code);
+    this.cities = [];
+    this.loadingCities = false;
+    
+    if (code && code.trim() !== '') {
+      // Limpiar ciudad cuando se cambia el país
+      this.f.patchValue({ ciudad: '' });
+      this.loadCitiesForCountry(code);
+    } else {
+      this.cities = [];
+      this.f.patchValue({ ciudad: '' });
+      console.log('País vacío, ciudades limpiadas');
+    }
+  }
+  
+  private loadCitiesForCountry(countryCode: string) {
+    if (!countryCode || countryCode.trim() === '') {
+      this.cities = [];
+      this.loadingCities = false;
+      return;
+    }
+    
+    // Normalizar código del país a mayúsculas (como espera el backend)
+    const normalizedCode = countryCode.trim().toUpperCase();
+    console.log('Cargando ciudades para país:', normalizedCode);
+    
+    this.loadingCities = true;
+    this.catalog.cities(normalizedCode).subscribe({
+      next: (res: any) => {
+        this.loadingCities = false;
+        console.log('Respuesta de ciudades recibida:', res);
+        
+        // El endpoint retorna directamente un array de strings (nombres de ciudades)
+        if (Array.isArray(res)) {
+          this.cities = res;
+          console.log(`Ciudades cargadas: ${res.length} ciudades para ${normalizedCode}`);
+          if (res.length === 0) {
+            console.warn(`No se encontraron ciudades para el país: ${normalizedCode}`);
+            this.toast.error(`No hay ciudades disponibles para el país seleccionado.`);
+          }
+        } else if (res && Array.isArray(res.items)) {
+          // Formato alternativo con items
+          this.cities = res.items;
+          console.log(`Ciudades cargadas (formato items): ${res.items.length} ciudades`);
+        } else if (res && Array.isArray(res.cities)) {
+          // Formato alternativo con cities
+          this.cities = res.cities;
+          console.log(`Ciudades cargadas (formato cities): ${res.cities.length} ciudades`);
+        } else {
+          console.warn('Formato de respuesta inesperado para ciudades:', res);
+          this.cities = [];
+          this.toast.error('Formato de respuesta inesperado al cargar ciudades.');
+        }
+      },
+      error: (err) => {
+        this.loadingCities = false;
+        console.error('Error cargando ciudades:', err);
+        console.error('Detalles del error:', {
+          status: err?.status,
+          message: err?.message,
+          error: err?.error,
+          url: err?.url
+        });
+        this.cities = [];
+        const errorMsg = err?.error?.error || err?.message || 'Error al cargar las ciudades';
+        this.toast.error(`${errorMsg}. Por favor, intenta de nuevo.`);
+      }
+    });
+  }
   save(){ 
     const id = localStorage.getItem('graduateId'); 
     if(!id) {

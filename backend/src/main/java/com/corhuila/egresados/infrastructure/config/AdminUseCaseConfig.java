@@ -33,12 +33,6 @@ public class AdminUseCaseConfig {
     }
 
     @Bean
-    public com.corhuila.egresados.application.admin.ManageBannerUseCase manageBannerUseCase(
-            com.corhuila.egresados.domain.ports.BannerRepository bannerRepository) {
-        return new com.corhuila.egresados.application.admin.ManageBannerUseCase(bannerRepository);
-    }
-
-    @Bean
     public com.corhuila.egresados.application.admin.ManageAdminUserUseCase manageAdminUserUseCase(
             com.corhuila.egresados.domain.ports.AdminUserRepository adminUserRepository,
             org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {

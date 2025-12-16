@@ -59,7 +59,7 @@ import { ToastService } from '../services/toast.service';
     </div>
 
     <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
-      <p>No hay ofertas disponibles para el estado seleccionado</p>
+      <p>No hay ofertas de empleo disponibles para el estado seleccionado.</p>
     </div>
 
     <div class="job-card" *ngFor="let j of items" [routerLink]="['/jobs', j.id]">
@@ -86,8 +86,8 @@ import { ToastService } from '../services/toast.service';
         </span>
       </div>
     </div>
-    
-    <div *ngIf="items.length > 0" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+
+    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
       <button class="btn" (click)="prev()" [disabled]="page===0 || loading">Anterior</button>
       <span style="padding: 0.5rem 1rem; display: inline-block;">
         Página {{page + 1}} de {{totalPages}} ({{total}} total)

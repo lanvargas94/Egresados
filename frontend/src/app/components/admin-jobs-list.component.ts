@@ -4,6 +4,8 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { ToastService } from '../services/toast.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-admin-jobs-list',
@@ -26,7 +28,7 @@ import { ToastService } from '../services/toast.service';
     </form>
     
     <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
-      <p>Sin resultados</p>
+      <p>No hay ofertas de empleo disponibles para el estado seleccionado.</p>
     </div>
 
     <div *ngIf="loading" class="card" style="text-align: center; padding: 2rem;">
@@ -46,6 +48,9 @@ import { ToastService } from '../services/toast.service';
             <strong>Publicación:</strong> {{formatDate(j.fechaInicioPublicacion)}} - 
             <strong>Vence:</strong> {{formatDate(j.fechaFinPublicacion) || 'Sin fecha'}}
           </p>
+          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;" *ngIf="j.interesados !== undefined">
+            <strong>Interesados:</strong> {{j.interesados}}
+          </p>
         </div>
         <span [class]="'badge badge-' + getEstadoClass(j.estado)" style="margin-left: 1rem;">
           {{j.estado}}
@@ -55,7 +60,11 @@ import { ToastService } from '../services/toast.service';
         <a class="btn" [routerLink]="['/admin/jobs', j.id]">Editar</a>
         <button class="btn" *ngIf="j.estado === 'BORRADOR'" (click)="publish(j.id)">Publicar</button>
         <button class="btn" *ngIf="j.estado === 'PUBLICADA'" (click)="expire(j.id)" style="background:#ff9800">Marcar como Vencida</button>
-        <button class="btn" *ngIf="j.estado !== 'ARCHIVADA'" (click)="archive(j.id)" style="background:#666">Archivar</button>
+        <button class="btn" (click)="delete(j.id)" style="background:#b00020">Eliminar</button>
+        <button class="btn" (click)="downloadReport(j.id)" style="background: #4caf50; display: inline-flex; align-items: center; gap: 0.5rem;" title="Descargar reporte de interesados">
+          <span>📥</span>
+          <span>Descargar reporte</span>
+        </button>
       </div>
     </div>
     
@@ -105,7 +114,8 @@ export class AdminJobsListComponent implements OnInit {
   constructor(
     private api: ApiService, 
     private fb: FormBuilder, 
-    private toasts: ToastService
+    private toasts: ToastService,
+    private http: HttpClient
   ) {}
   
   ngOnInit(){ 
@@ -121,13 +131,56 @@ export class AdminJobsListComponent implements OnInit {
     const estado=this.f.value.estado||''; 
     this.api.get(`/admin/jobs?page=${this.page}&size=${this.size}${estado?`&estado=${estado}`:''}`).subscribe({
       next: (res:any) => { 
-        this.items=res.items; 
-        this.total=res.total; 
+        this.items=res.items || []; 
+        this.total=res.total || 0;
         this.loading = false;
+        // Cargar estadísticas de interesados para cada oferta
+        this.items.forEach((j: any) => {
+          this.loadStats(j.id).then((stats: any) => {
+            j.interesados = stats.interesados || 0;
+          });
+        });
       },
       error: (err) => {
         this.toasts.error('Error al cargar ofertas');
         this.loading = false;
+      }
+    });
+  }
+  
+  loadStats(jobId: string): Promise<any> {
+    return new Promise((resolve) => {
+      this.api.get(`/admin/jobs/${jobId}/stats`).subscribe({
+        next: (res: any) => resolve(res),
+        error: () => resolve({ interesados: 0 })
+      });
+    });
+  }
+  
+  downloadReport(jobId: string) {
+    const token = localStorage.getItem('adminToken');
+    const headers: any = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    this.http.get(`${environment.apiUrl}/admin/jobs/${jobId}/interests/export`, {
+      responseType: 'blob',
+      headers: headers
+    }).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `interesados-${jobId}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.toasts.success('Reporte descargado correctamente');
+      },
+      error: (err: any) => {
+        this.toasts.error('Error al descargar el reporte');
+        console.error('Error al descargar reporte:', err);
       }
     });
   }
@@ -174,15 +227,15 @@ export class AdminJobsListComponent implements OnInit {
     }); 
   }
   
-  archive(id:string){ 
-    if(!confirm('¿Archivar esta oferta?')) return; 
-    this.api.post(`/admin/jobs/${id}/archive`,{}).subscribe({
+  delete(id:string){ 
+    if(!confirm('¿Estás seguro de eliminar esta oferta? Esta acción no se puede deshacer.')) return; 
+    this.api.delete(`/admin/jobs/${id}`).subscribe({
       next: () => { 
-        this.toasts.success('Oferta archivada'); 
+        this.toasts.success('Oferta eliminada'); 
         this.load(); 
       },
       error: (err: any) => {
-        const msg = err.error?.error || 'Error al archivar';
+        const msg = err.error?.error || 'Error al eliminar';
         this.toasts.error(msg);
       }
     }); 

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/users")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "16. Administración - Usuarios", description = "CRUD de usuarios administradores y gestión de roles")
 public class AdminUsersController {
     private final ManageAdminUserUseCase adminUserUseCase;
     private final AuditService auditService;
@@ -143,6 +144,9 @@ public class AdminUsersController {
         }
     }
 }
+
+
+
 
 
 

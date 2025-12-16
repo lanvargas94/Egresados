@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/events")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "08. Eventos", description = "Visualización de eventos públicos y sistema de registro (RSVP) para egresados")
 public class EventPublicController {
     private final EventRepository repo;
     private final EventRsvpService rsvpService;

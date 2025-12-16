@@ -17,4 +17,5 @@ public interface JobOfferRepository {
     com.corhuila.egresados.domain.util.PageResult<JobOffer> adminList(String estado, int page, int size);
     com.corhuila.egresados.domain.util.PageResult<JobOffer> findForGraduates(String estado, String sector, String empresa, String tipoContrato, String search, LocalDate fromDate, LocalDate toDate, int page, int size, String sort);
     Optional<JobOffer> findByIdForGraduate(UUID id);
+    void delete(UUID id);
 }

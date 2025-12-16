@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/events")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "12. Administración - Eventos", description = "Administración de eventos: creación, gestión de asistentes y exportación de registros")
 public class AdminEventController {
     private final AdminEventService service;
     private final com.corhuila.egresados.infrastructure.audit.AuditService audit;
@@ -70,30 +71,56 @@ public class AdminEventController {
         return ResponseEntity.ok(saved); 
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable UUID id) {
+        try {
+            var event = repo.findEvent(id).orElseThrow();
+            String nombre = event.getNombre() != null ? event.getNombre() : "Sin nombre";
+            service.delete(id);
+            audit.log("DELETE","Event", id.toString(), nombre);
+            return ResponseEntity.ok(java.util.Map.of("ok", true));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Error al eliminar evento: " + ex.getMessage()));
+        }
+    }
+
     @GetMapping("/{id}/attendees/export")
     public ResponseEntity<?> exportAttendees(@PathVariable UUID id) {
         var list = rsvps.findByEventId(id);
         StringBuilder sb = new StringBuilder();
-        sb.append("nombre,facultad,programa,correo\n");
+        // Encabezados con BOM UTF-8 para Excel
+        sb.append("\uFEFF");
+        sb.append("Nombre,Telefono,Correo,Direccion,Programa\n");
         for (var r : list) {
             var g = grads.findWithProgramsById(r.getGraduateId()).orElse(null);
             if (g != null) {
-                String nombre = g.getNombreLegal() == null ? "" : g.getNombreLegal().replace(","," ");
+                String nombre = g.getNombreLegal() == null ? "" : g.getNombreLegal().replace(","," ").replace("\n"," ").replace("\r"," ");
+                String telefono = g.getTelefonoMovilE164() == null ? "" : g.getTelefonoMovilE164();
                 String correo = g.getCorreoPersonal() == null ? "" : g.getCorreoPersonal();
+                // Dirección: ciudad, país
+                String direccion = "";
+                if (g.getCiudad() != null && !g.getCiudad().trim().isEmpty()) {
+                    direccion = g.getCiudad().replace(","," ");
+                }
+                if (g.getPais() != null && !g.getPais().trim().isEmpty()) {
+                    if (!direccion.isEmpty()) direccion += ", ";
+                    direccion += g.getPais().replace(","," ");
+                }
+                if (direccion.isEmpty()) direccion = "No especificada";
+                
                 if (g.getProgramas() == null || g.getProgramas().isEmpty()) {
-                    sb.append(nombre).append(",,,").append(correo).append("\n");
+                    sb.append(nombre).append(",").append(telefono).append(",").append(correo).append(",").append(direccion).append(",").append("").append("\n");
                 } else {
                     for (var p : g.getProgramas()) {
-                        String fac = p.getFacultad() == null ? "" : p.getFacultad().replace(","," ");
-                        String prog = p.getPrograma() == null ? "" : p.getPrograma().replace(","," ");
-                        sb.append(nombre).append(",").append(fac).append(",").append(prog).append(",").append(correo).append("\n");
+                        String prog = p.getPrograma() == null ? "" : p.getPrograma().replace(","," ").replace("\n"," ").replace("\r"," ");
+                        sb.append(nombre).append(",").append(telefono).append(",").append(correo).append(",").append(direccion).append(",").append(prog).append("\n");
                     }
                 }
             }
         }
         return ResponseEntity.ok()
-                .header("Content-Type","text/csv")
-                .header("Content-Disposition","attachment; filename=attendees-"+id+".csv")
+                .header("Content-Type","text/csv; charset=utf-8")
+                .header("Content-Disposition","attachment; filename=asistentes-"+id+".csv")
                 .body(sb.toString());
     }
 

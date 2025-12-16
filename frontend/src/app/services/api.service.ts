@@ -19,7 +19,7 @@ export class ApiService {
   }
   get<T>(path: string, options?: any): Observable<T> {
     const req = options
-      ? this.http.get(`${this.base}${path}`, options)
+      ? this.http.get(`${this.base}${path}`, { ...options, observe: 'body', responseType: options.responseType || 'json' })
       : this.http.get(`${this.base}${path}`);
     return req as unknown as Observable<T>;
   }

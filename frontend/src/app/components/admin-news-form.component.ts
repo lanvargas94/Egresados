@@ -82,20 +82,34 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
         <div style="margin-top:8px">
           <label>Imagen (JPG/PNG, opcional)</label>
-          <input type="file" accept="image/jpeg,image/png" (change)="upload($event, 'image')" />
-          <div *ngIf="news?.imagenUrl" style="margin-top:8px">
-            <img [src]="news.imagenUrl" alt="imagen" style="max-width:300px;border:1px solid #ddd;border-radius:6px"/>
-            <button class="btn" type="button" (click)="deleteFile('image')" style="background:#b00020;margin-left:8px">Eliminar imagen</button>
+          <input type="file" accept="image/jpeg,image/png" 
+                 [disabled]="!id" 
+                 (change)="upload($event, 'image')" />
+          <div *ngIf="!id" style="margin-top: 0.5rem; padding: 0.5rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 0.9rem;">
+            ⚠️ Primero guarda la noticia para poder subir una imagen
+          </div>
+          <div *ngIf="news?.imagenUrl" style="margin-top:8px; padding: 0.75rem; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🖼️</span>
+            <a [href]="news.imagenUrl" target="_blank" style="flex: 1; text-decoration: none; color: #2196F3;">
+              Ver imagen
+            </a>
+            <button class="btn" type="button" (click)="deleteFile('image')" style="background:#b00020; padding: 0.25rem 0.75rem; font-size: 0.85rem;">
+              Eliminar
+            </button>
           </div>
         </div>
 
         <div style="margin-top:8px">
           <label>Adjunto (PDF/DOC/DOCX, opcional)</label>
           <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                 [disabled]="!id"
                  (change)="upload($event, 'attachment')" />
           <small style="color: #666; display: block; margin-top: 0.25rem;">
-            Formatos permitidos: PDF, DOC, DOCX. Tamaño máximo: 5 MB
+            Formatos permitidos: PDF, DOC, DOCX. Tamaño máximo: 2 MB
           </small>
+          <div *ngIf="!id" style="margin-top: 0.5rem; padding: 0.5rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 0.9rem;">
+            ⚠️ Primero guarda la noticia para poder subir un adjunto
+          </div>
           <div *ngIf="attachmentError" style="color: red; margin-top: 0.5rem; font-size: 0.9rem;">
             {{attachmentError}}
           </div>
@@ -233,15 +247,19 @@ export class AdminNewsFormComponent implements OnInit {
     }); 
   }
   upload(ev:any, type:'image'|'attachment'){
-    if(!this.id){ this.toast.error('Primero guarda para obtener ID'); return; }
+    if(!this.id){ 
+      this.toast.error('Primero guarda la noticia para poder subir archivos');
+      ev.target.value = ''; // Limpiar el input
+      return; 
+    }
     const file = ev.target.files?.[0]; if(!file) return;
     
     // Validaciones para adjuntos
     if (type === 'attachment') {
       this.attachmentError = null;
-      const maxSize = 5 * 1024 * 1024; // 5 MB
+      const maxSize = 2 * 1024 * 1024; // 2 MB
       if (file.size > maxSize) {
-        this.attachmentError = 'El archivo excede el tamaño máximo de 5 MB';
+        this.attachmentError = 'El archivo excede el tamaño máximo de 2 MB';
         ev.target.value = ''; // Limpiar el input
         return;
       }

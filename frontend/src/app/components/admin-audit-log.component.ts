@@ -230,25 +230,16 @@ import { ToastService } from '../services/toast.service';
           </table>
         </div>
 
-        <div class="pagination">
-          <div class="pagination-info">
-            Mostrando {{items.length}} de {{total}} registros
-            (Página {{page + 1}} de {{totalPages}})
-          </div>
-          <div class="pagination-controls">
-            <button 
-              class="btn btn-sm" 
-              (click)="previousPage()" 
-              [disabled]="page === 0 || loading">
-              ← Anterior
-            </button>
-            <button 
-              class="btn btn-sm" 
-              (click)="nextPage()" 
-              [disabled]="page >= totalPages - 1 || loading">
-              Siguiente →
-            </button>
-          </div>
+        <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
+          <p>Sin resultados</p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+          <button class="btn" (click)="previousPage()" [disabled]="page === 0 || loading">Anterior</button>
+          <span style="padding: 0.5rem 1rem; display: inline-block;">
+            Página {{page + 1}} de {{totalPages}} ({{total}} total)
+          </span>
+          <button class="btn" (click)="nextPage()" [disabled]="page >= totalPages - 1 || loading">Siguiente</button>
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/profile")
 @org.springframework.web.bind.annotation.CrossOrigin(origins = "${FRONT_ORIGIN:http://localhost:4200}")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "04. Perfil de Egresado", description = "Gestión completa del perfil personal y profesional del egresado, incluyendo historial de cambios")
 public class ProfileController {
     private final GraduateRepository grads;
     private final ProfileChangeLogRepository logs;

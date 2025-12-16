@@ -74,7 +74,14 @@ export class AdminGraduatesService {
   changeStatus(id: string, estado: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO'): Observable<Graduate> {
     return this.api.put<Graduate>(`/admin/graduates/${id}/status`, { estado });
   }
+
+  sendBulkEmail(formData: FormData): Observable<any> {
+    return this.api.post<any>(`/admin/graduates/bulk-email`, formData);
+  }
 }
+
+
+
 
 
 

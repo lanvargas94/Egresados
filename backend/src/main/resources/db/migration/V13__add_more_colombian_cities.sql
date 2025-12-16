@@ -1,0 +1,37 @@
+-- Agregar más ciudades colombianas al catálogo
+-- Esta migración agrega ciudades adicionales para Colombia
+INSERT INTO cities(country_code, name) VALUES 
+    ('CO', 'Cali'),
+    ('CO', 'Barranquilla'),
+    ('CO', 'Cartagena'),
+    ('CO', 'Bucaramanga'),
+    ('CO', 'Pereira'),
+    ('CO', 'Santa Marta'),
+    ('CO', 'Manizales'),
+    ('CO', 'Armenia'),
+    ('CO', 'Villavicencio'),
+    ('CO', 'Pasto'),
+    ('CO', 'Ibagué'),
+    ('CO', 'Valledupar'),
+    ('CO', 'Montería'),
+    ('CO', 'Sincelejo'),
+    ('CO', 'Popayán'),
+    ('CO', 'Tunja'),
+    ('CO', 'Riohacha'),
+    ('CO', 'Florencia'),
+    ('CO', 'Quibdó'),
+    ('CO', 'Yopal'),
+    ('CO', 'Mocoa'),
+    ('CO', 'Leticia'),
+    ('CO', 'San Andrés'),
+    ('CO', 'Palmira'),
+    ('CO', 'Buenaventura'),
+    ('CO', 'Cúcuta'),
+    ('CO', 'Soacha'),
+    ('CO', 'Soledad'),
+    ('CO', 'Bello'),
+    ('CO', 'Itagüí')
+ON CONFLICT DO NOTHING;
+
+
+

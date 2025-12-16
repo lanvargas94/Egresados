@@ -9,5 +9,6 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 ENV JAVA_OPTS=""
 COPY --from=build /app/target/egresados-*.jar /app/app.jar
+RUN mkdir -p /app/uploads/news/images /app/uploads/news/attachments && chmod -R 755 /app/uploads
 EXPOSE 8080
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]

@@ -81,4 +81,10 @@ public class EventRepositoryJpaAdapter implements EventRepository {
         var pg = events.findPublicados(ahora, org.springframework.data.domain.PageRequest.of(page, size));
         return new com.corhuila.egresados.domain.util.PageResult<>(pg.getContent().stream().map(EventMapper::toDomain).toList(), pg.getTotalElements(), page, size);
     }
+
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        events.deleteById(id);
+    }
 }

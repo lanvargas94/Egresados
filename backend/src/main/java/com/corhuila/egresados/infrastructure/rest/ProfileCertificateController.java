@@ -20,6 +20,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/profile")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "04. Perfil de Egresado", description = "Gestión completa del perfil personal y profesional del egresado, incluyendo historial de cambios")
 public class ProfileCertificateController {
     private final GraduateRepository grads;
     public ProfileCertificateController(GraduateRepository grads) { this.grads = grads; }

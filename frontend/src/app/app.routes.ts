@@ -28,8 +28,6 @@ import { AdminContractTypesComponent } from './components/admin-contract-types.c
 import { AdminGraduatesListComponent } from './components/admin-graduates-list.component';
 import { AdminGraduateDetailComponent } from './components/admin-graduate-detail.component';
 import { AdminLayoutComponent } from './components/admin-layout.component';
-import { AdminBannersListComponent } from './components/admin-banners-list.component';
-import { AdminBannersFormComponent } from './components/admin-banners-form.component';
 import { AdminUsersListComponent } from './components/admin-users-list.component';
 import { AdminUsersFormComponent } from './components/admin-users-form.component';
 import { AdminCatalogsComponent } from './components/admin-catalogs.component';
@@ -59,9 +57,6 @@ export const appRoutes: Routes = [
       { path: 'analytics', component: AdminAnalyticsComponent },
       { path: 'reports', component: AdminReportsComponent },
       { path: 'reports/history', component: AdminExportHistoryComponent },
-      { path: 'banners', component: AdminBannersListComponent },
-      { path: 'banners/new', component: AdminBannersFormComponent },
-      { path: 'banners/:id', component: AdminBannersFormComponent },
       { path: 'users', component: AdminUsersListComponent },
       { path: 'users/new', component: AdminUsersFormComponent },
       { path: 'users/:id', component: AdminUsersFormComponent },

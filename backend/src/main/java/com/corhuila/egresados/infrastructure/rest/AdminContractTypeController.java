@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin/contract-types")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "15. Administración - Catálogos", description = "Gestión de catálogos maestros: facultades, programas, ciudades, sectores y tipos de contrato")
 public class AdminContractTypeController {
     private final ContractTypeRepository repo; private final AuditService audit;
     public AdminContractTypeController(ContractTypeRepository repo, AuditService audit) { this.repo = repo; this.audit = audit; }

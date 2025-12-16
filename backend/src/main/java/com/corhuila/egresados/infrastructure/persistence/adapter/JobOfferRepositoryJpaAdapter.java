@@ -156,4 +156,10 @@ public class JobOfferRepositoryJpaAdapter implements JobOfferRepository {
                 .filter(j -> j.getEstado() != com.corhuila.egresados.domain.model.JobOffer.Estado.BORRADOR)
                 .map(JobOfferMapper::toDomain);
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void delete(UUID id) {
+        jpa.deleteById(id);
+    }
 }

@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/catalog")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "05. Catálogos Públicos", description = "Consulta de catálogos maestros: países, ciudades, facultades, programas, sectores y tipos de contrato")
 public class CatalogController {
     private final CountryRepository countries;
     private final CityRepository cities;
@@ -45,11 +46,24 @@ public class CatalogController {
 
     @GetMapping("/cities")
     public ResponseEntity<?> cities(@RequestParam("country") String country) {
-        var list = cities.findAll().stream()
-                .filter(c -> country.equalsIgnoreCase(c.getCountryCode()))
+        // Log para debugging
+        var allCities = cities.findAll();
+        System.out.println("Total ciudades en BD: " + allCities.size());
+        System.out.println("Buscando ciudades para país: " + country);
+        
+        var list = allCities.stream()
+                .filter(c -> {
+                    boolean matches = country.equalsIgnoreCase(c.getCountryCode());
+                    if (matches) {
+                        System.out.println("Ciudad encontrada: " + c.getName() + " (país: " + c.getCountryCode() + ")");
+                    }
+                    return matches;
+                })
                 .map(c -> c.getName())
                 .sorted()
                 .toList();
+        
+        System.out.println("Ciudades encontradas para " + country + ": " + list.size());
         return ResponseEntity.ok(list);
     }
 

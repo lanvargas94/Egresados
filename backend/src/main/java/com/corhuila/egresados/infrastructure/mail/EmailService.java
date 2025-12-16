@@ -3,6 +3,7 @@ package com.corhuila.egresados.infrastructure.mail;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,42 @@ public class EmailService {
                 "<p>" + link + "</p>" +
                 "<p>Gracias.</p>";
         sendHtml(to, "Confirma tu correo – Egresados CORHUILA", body);
+    }
+
+    public void sendHtmlWithAttachments(String to, String subject, String html, 
+                                       java.io.File attachment, java.io.File image) throws MessagingException {
+        MimeMessage msg = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
+        helper.setFrom(from);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(html, true);
+        
+        // Adjuntar documento si existe
+        if (attachment != null && attachment.exists() && attachment.length() > 0) {
+            FileSystemResource fileResource = new FileSystemResource(attachment);
+            String attachmentName = attachment.getName();
+            // Si el nombre tiene prefijos como "doc_", extraer el nombre original
+            if (attachmentName.contains("_") && attachmentName.length() > 50) {
+                // Intentar extraer el nombre original después del UUID
+                int lastUnderscore = attachmentName.lastIndexOf('_');
+                if (lastUnderscore > 0 && lastUnderscore < attachmentName.length() - 1) {
+                    attachmentName = attachmentName.substring(lastUnderscore + 1);
+                }
+            }
+            helper.addAttachment(attachmentName, fileResource);
+            System.out.println("Documento adjuntado: " + attachmentName + " (" + attachment.length() + " bytes)");
+        }
+        
+        // Adjuntar imagen como inline si existe
+        if (image != null && image.exists() && image.length() > 0) {
+            FileSystemResource imageResource = new FileSystemResource(image);
+            // Usar "image" como Content-ID para que coincida con cid:image en el HTML
+            helper.addInline("image", imageResource);
+            System.out.println("Imagen adjuntada como inline: " + image.getName() + " (" + image.length() + " bytes)");
+        }
+        
+        mailSender.send(msg);
     }
 }
 

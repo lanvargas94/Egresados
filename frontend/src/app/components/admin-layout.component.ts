@@ -353,15 +353,6 @@ import { ToastService } from '../services/toast.service';
                 <span class="nav-link-icon">📰</span>
                 <span>Noticias</span>
               </a>
-              <a 
-                routerLink="/admin/banners" 
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{exact: true}"
-                class="nav-link"
-                (click)="closeSidebar()">
-                <span class="nav-link-icon">🖼️</span>
-                <span>Banners</span>
-              </a>
             </div>
 
             <div class="nav-section" *ngIf="roleService.isAdminGeneral()">

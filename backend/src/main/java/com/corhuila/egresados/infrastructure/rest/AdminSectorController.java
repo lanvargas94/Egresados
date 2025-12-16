@@ -10,6 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/sectors")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "15. Administración - Catálogos", description = "Gestión de catálogos maestros: facultades, programas, ciudades, sectores y tipos de contrato")
 public class AdminSectorController {
     private final SectorRepository repo;
     private final AuditService audit;

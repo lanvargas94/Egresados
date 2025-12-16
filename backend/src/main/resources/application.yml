@@ -1,8 +1,14 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/egresados}
+    # PostgreSQL usa UTF-8 por defecto, pero especificamos charset explícitamente
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/egresados?stringtype=unspecified}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,8 +27,9 @@ spring:
       mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 2MB
+      max-request-size: 2MB
+      enabled: true
 
 server:
   port: ${PORT:8080}
@@ -32,8 +39,36 @@ logging:
     org.springframework: info
 
 springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
   swagger-ui:
-    path: /swagger
+    path: /swagger-ui.html
+    enabled: true
+    # Organización y ordenamiento
+    operations-sorter: method          # Ordenar operaciones por método HTTP (GET, POST, PUT, DELETE)
+    tags-sorter: alpha                 # Ordenar tags alfabéticamente (mantiene el orden numérico 01, 02, etc.)
+    try-it-out-enabled: true           # Habilitar botón "Try it out"
+    filter: true                       # Habilitar filtro de búsqueda
+    # Visualización
+    display-request-duration: true     # Mostrar duración de las peticiones
+    doc-expansion: list                # Expandir solo las listas (más organizado)
+    show-extensions: true               # Mostrar extensiones
+    show-common-extensions: true       # Mostrar extensiones comunes
+    default-models-expand-depth: 1     # Profundidad de expansión de modelos
+    default-model-expand-depth: 1      # Profundidad de expansión de modelo individual
+    # Configuración adicional
+    persist-authorization: true        # Persistir autorización entre sesiones
+    display-operation-id: false        # Ocultar operation IDs (más limpio)
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  use-management-port: false
+  # Agrupar por tags
+  group-configs:
+    - group: 'default'
+      display-name: 'API Egresados CORHUILA'
+      paths-to-match: '/**'
 
 app:
   mailFrom: ${MAIL_FROM:no-reply@egresados.local}

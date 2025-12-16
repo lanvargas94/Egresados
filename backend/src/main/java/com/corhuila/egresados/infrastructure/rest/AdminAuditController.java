@@ -18,6 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/audit")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "17. Administración - Auditoría", description = "Registro y consulta de acciones administrativas para trazabilidad")
 public class AdminAuditController {
     private final AuditLogRepository auditLogRepository;
 

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminGraduatesService, GraduateFilters, GraduateListResponse, Graduate } from '../services/admin-graduates.service';
 import { CatalogService } from '../services/catalog.service';
 import { ToastService } from '../services/toast.service';
@@ -153,6 +153,74 @@ import { AdminRoleService } from '../services/admin-role.service';
       color: var(--text-secondary);
     }
 
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: var(--spacing-lg);
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: var(--border-radius-lg);
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-lg);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: var(--primary);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      line-height: 1;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: var(--spacing-lg);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-md);
+      padding: var(--spacing-lg);
+      border-top: 2px solid var(--border-color);
+    }
+
     @media (max-width: 768px) {
       .filters-grid {
         grid-template-columns: 1fr;
@@ -243,12 +311,20 @@ import { AdminRoleService } from '../services/admin-role.service';
             </div>
           </div>
 
-          <div style="display: flex; gap: var(--spacing-md);">
+          <div style="display: flex; gap: var(--spacing-md); align-items: center;">
             <button class="btn" type="submit" [disabled]="loading">
               🔍 Filtrar
             </button>
             <button type="button" class="btn btn-outline" (click)="clearFilters()">
               Limpiar
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline" 
+              (click)="openBulkEmailModal()"
+              title="Enviar correo masivo"
+              style="position: relative;">
+              📧 Enviar Correo Masivo
             </button>
           </div>
         </form>
@@ -321,25 +397,16 @@ import { AdminRoleService } from '../services/admin-role.service';
           </table>
         </div>
 
-        <div class="pagination">
-          <div class="pagination-info">
-            Mostrando {{items.length}} de {{total}} egresados
-            (Página {{page + 1}} de {{totalPages}})
-          </div>
-          <div class="pagination-controls">
-            <button 
-              class="btn btn-sm" 
-              (click)="previousPage()" 
-              [disabled]="page === 0 || loading">
-              ← Anterior
-            </button>
-            <button 
-              class="btn btn-sm" 
-              (click)="nextPage()" 
-              [disabled]="page >= totalPages - 1 || loading">
-              Siguiente →
-            </button>
-          </div>
+        <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
+          <p>Sin resultados</p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+          <button class="btn" (click)="previousPage()" [disabled]="page === 0 || loading">Anterior</button>
+          <span style="padding: 0.5rem 1rem; display: inline-block;">
+            Página {{page + 1}} de {{totalPages}} ({{total}} total)
+          </span>
+          <button class="btn" (click)="nextPage()" [disabled]="page >= totalPages - 1 || loading">Siguiente</button>
         </div>
       </div>
 
@@ -349,6 +416,84 @@ import { AdminRoleService } from '../services/admin-role.service';
 
       <div *ngIf="!loading && items.length === 0" class="empty-state">
         <p>No se encontraron egresados con los filtros seleccionados.</p>
+      </div>
+
+      <!-- Modal de Correo Masivo -->
+      <div *ngIf="showBulkEmailModal" class="modal-overlay" (click)="closeBulkEmailModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>📧 Enviar Correo Masivo</h2>
+            <button class="modal-close" (click)="closeBulkEmailModal()">×</button>
+          </div>
+          <form [formGroup]="bulkEmailForm" (ngSubmit)="sendBulkEmail()" class="modal-body">
+            <div class="form-group">
+              <label for="asunto">Asunto <span style="color: red;">*</span></label>
+              <input 
+                id="asunto"
+                type="text"
+                formControlName="asunto"
+                placeholder="Ej: Actualización importante"
+                required />
+            </div>
+
+            <div class="form-group">
+              <label for="descripcion">Descripción <span style="color: red;">*</span></label>
+              <textarea 
+                id="descripcion"
+                formControlName="descripcion"
+                rows="6"
+                placeholder="Escribe el contenido del correo aquí..."
+                required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="documento">Adjuntar Documento (opcional)</label>
+              <input 
+                id="documento"
+                type="file"
+                (change)="onDocumentChange($event)"
+                accept=".pdf,.doc,.docx,.txt"
+                style="padding: 0.5rem;" />
+              <small style="color: #666; display: block; margin-top: 0.25rem;">
+                Formatos permitidos: PDF, DOC, DOCX, TXT (máx. 2MB)
+              </small>
+              <div *ngIf="selectedDocument" style="margin-top: 0.5rem; padding: 0.5rem; background: #f0f0f0; border-radius: 4px;">
+                📎 {{selectedDocument.name}}
+                <button type="button" (click)="removeDocument()" style="margin-left: 0.5rem; color: red; background: none; border: none; cursor: pointer;">✕</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="imagen">Adjuntar Imagen (opcional)</label>
+              <input 
+                id="imagen"
+                type="file"
+                (change)="onImageChange($event)"
+                accept="image/jpeg,image/png"
+                style="padding: 0.5rem;" />
+              <small style="color: #666; display: block; margin-top: 0.25rem;">
+                Formatos permitidos: JPG, PNG (máx. 2MB)
+              </small>
+              <div *ngIf="selectedImage" style="margin-top: 0.5rem;">
+                <img [src]="imagePreview" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #ddd;" />
+                <div style="margin-top: 0.5rem;">
+                  📷 {{selectedImage.name}}
+                  <button type="button" (click)="removeImage()" style="margin-left: 0.5rem; color: red; background: none; border: none; cursor: pointer;">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" (click)="closeBulkEmailModal()" [disabled]="sendingEmail">
+                Cancelar
+              </button>
+              <button type="submit" class="btn" [disabled]="bulkEmailForm.invalid || sendingEmail">
+                <span *ngIf="!sendingEmail">📧 Enviar Correo</span>
+                <span *ngIf="sendingEmail">Enviando...</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   `
@@ -360,8 +505,14 @@ export class AdminGraduatesListComponent implements OnInit {
   size = 10;
   loading = false;
   filtersForm: FormGroup;
+  bulkEmailForm: FormGroup;
   availablePrograms: string[] = [];
   availableCities: string[] = [];
+  showBulkEmailModal = false;
+  sendingEmail = false;
+  selectedDocument: File | null = null;
+  selectedImage: File | null = null;
+  imagePreview: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -378,6 +529,11 @@ export class AdminGraduatesListComponent implements OnInit {
       anioGraduacion: [''],
       estado: [''],
       ciudad: ['']
+    });
+
+    this.bulkEmailForm = this.fb.group({
+      asunto: ['', [Validators.required]],
+      descripcion: ['', [Validators.required]]
     });
 
     // Si es ADMIN_PROGRAMA, cargar solo sus programas asignados
@@ -553,6 +709,100 @@ export class AdminGraduatesListComponent implements OnInit {
     link.download = `egresados-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     this.toast.success('Exportación completada');
+  }
+
+  openBulkEmailModal() {
+    this.showBulkEmailModal = true;
+    this.bulkEmailForm.reset();
+    this.selectedDocument = null;
+    this.selectedImage = null;
+    this.imagePreview = null;
+  }
+
+  closeBulkEmailModal() {
+    this.showBulkEmailModal = false;
+    this.bulkEmailForm.reset();
+    this.selectedDocument = null;
+    this.selectedImage = null;
+    this.imagePreview = null;
+  }
+
+  onDocumentChange(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        this.toast.error('El documento no puede ser mayor a 2MB');
+        return;
+      }
+      this.selectedDocument = file;
+    }
+  }
+
+  removeDocument() {
+    this.selectedDocument = null;
+    const input = document.getElementById('documento') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  onImageChange(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        this.toast.error('La imagen no puede ser mayor a 2MB');
+        return;
+      }
+      if (!file.type.match(/image\/(jpeg|png)/)) {
+        this.toast.error('La imagen debe ser JPG o PNG');
+        return;
+      }
+      this.selectedImage = file;
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage() {
+    this.selectedImage = null;
+    this.imagePreview = null;
+    const input = document.getElementById('imagen') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  sendBulkEmail() {
+    if (this.bulkEmailForm.invalid) {
+      this.toast.error('Por favor completa todos los campos obligatorios');
+      return;
+    }
+
+    this.sendingEmail = true;
+    const formData = new FormData();
+    formData.append('asunto', this.bulkEmailForm.value.asunto);
+    formData.append('descripcion', this.bulkEmailForm.value.descripcion);
+    
+    if (this.selectedDocument) {
+      formData.append('documento', this.selectedDocument);
+    }
+    
+    if (this.selectedImage) {
+      formData.append('imagen', this.selectedImage);
+    }
+
+    this.service.sendBulkEmail(formData).subscribe({
+      next: (res: any) => {
+        this.sendingEmail = false;
+        this.toast.success(res.message || 'Correo masivo enviado exitosamente');
+        this.closeBulkEmailModal();
+      },
+      error: (err) => {
+        this.sendingEmail = false;
+        this.toast.error(err?.error?.error || 'Error al enviar correo masivo');
+      }
+    });
   }
 }
 

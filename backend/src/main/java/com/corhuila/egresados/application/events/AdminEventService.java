@@ -37,6 +37,11 @@ public class AdminEventService {
         return repo.save(e);
     }
 
+    public void delete(UUID id) {
+        repo.findEvent(id).orElseThrow(); // Verificar que existe
+        repo.delete(id);
+    }
+
     private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 }
 

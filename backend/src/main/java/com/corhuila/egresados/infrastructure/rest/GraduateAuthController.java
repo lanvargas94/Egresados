@@ -5,16 +5,17 @@ import com.corhuila.egresados.infrastructure.auth.GraduateOtpEntity;
 import com.corhuila.egresados.infrastructure.auth.GraduateOtpRepository;
 import com.corhuila.egresados.infrastructure.mail.EmailService;
 import com.corhuila.egresados.infrastructure.security.JwtUtil;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "01. Autenticación de Egresados", description = "Identificación de egresados y autenticación mediante OTP (One-Time Password)")
 public class GraduateAuthController {
     private final GraduateRepository grads;
     private final GraduateOtpRepository otps;

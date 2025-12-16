@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/validate")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "05. Catálogos Públicos", description = "Consulta de catálogos maestros: países, ciudades, facultades, programas, sectores y tipos de contrato")
 public class PublicValidationController {
     private final GraduateRepository grads;
     public PublicValidationController(GraduateRepository grads) { this.grads = grads; }

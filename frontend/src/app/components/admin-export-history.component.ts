@@ -22,17 +22,48 @@ import { ApiService } from '../services/api.service';
         </tr>
       </tbody>
     </table>
-    <button class="btn" (click)="prev()" [disabled]="page===0">Prev</button>
-    <button class="btn" (click)="next()" [disabled]="(page+1)*size>=total">Next</button>
+    
+    <div *ngIf="items.length === 0 && !loading" class="card" style="text-align: center; padding: 2rem;">
+      <p>Sin resultados</p>
+    </div>
+
+    <div *ngIf="loading" class="card" style="text-align: center; padding: 2rem;">
+      <p>Cargando...</p>
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+      <button class="btn" (click)="prev()" [disabled]="page===0 || loading">Anterior</button>
+      <span style="padding: 0.5rem 1rem; display: inline-block;">
+        Página {{page + 1}} de {{totalPages}} ({{total}} total)
+      </span>
+      <button class="btn" (click)="next()" [disabled]="(page+1)*size>=total || loading">Siguiente</button>
+    </div>
   </div>
   `
 })
 export class AdminExportHistoryComponent implements OnInit {
-  items:any[]=[]; total=0; page=0; size=10;
+  items:any[]=[]; total=0; page=0; size=10; loading=false;
   constructor(private api: ApiService) {}
   ngOnInit(){ this.load(); }
-  load(){ this.api.get(`/admin/reports/logs?page=${this.page}&size=${this.size}`).subscribe((res:any)=>{ this.items=res.items; this.total=res.total; }); }
-  prev(){ if(this.page>0){ this.page--; this.load(); } }
-  next(){ if((this.page+1)*this.size<this.total){ this.page++; this.load(); } }
+  
+  get totalPages(): number {
+    return Math.ceil(this.total / this.size);
+  }
+  
+  load(){ 
+    this.loading = true;
+    this.api.get(`/admin/reports/logs?page=${this.page}&size=${this.size}`).subscribe({
+      next: (res:any) => { 
+        this.items=res.items || []; 
+        this.total=res.total || 0; 
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+      }
+    }); 
+  }
+  prev(){ if(this.page>0 && !this.loading){ this.page--; this.load(); } }
+  next(){ if((this.page+1)*this.size<this.total && !this.loading){ this.page++; this.load(); } }
 }
 

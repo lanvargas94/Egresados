@@ -40,14 +40,18 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable()) // Deshabilitar CORS de Spring Security, usar CorsFilter personalizado
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Permitir OPTIONS
+                        // Swagger/OpenAPI
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger/**").permitAll()
+                        // Endpoints públicos
                         .requestMatchers("/api/admin/auth/login").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/catalog/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        // Endpoints protegidos para egresados
                         .requestMatchers("/api/profile/**").hasRole("GRAD")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/events/*/rsvp", "/api/events/*/waitlist").hasRole("GRAD")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/events/*/rsvp").hasRole("GRAD")
-                        .requestMatchers("/api/public/**").permitAll()
                         // Rutas admin: ADMIN_GENERAL tiene acceso total, ADMIN_PROGRAMA solo algunas
                         .requestMatchers("/api/admin/users/**", "/api/admin/reports/**").hasRole("ADMIN_GENERAL")
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN_GENERAL", "ADMIN_PROGRAMA")

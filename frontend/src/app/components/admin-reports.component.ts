@@ -1,9 +1,11 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { AdminReportsService } from '../services/admin-reports.service';
 import { ToastService } from '../services/toast.service';
+import { firstValueFrom } from 'rxjs';
+import Chart from 'chart.js/auto';
 
 @Component({
   selector: 'app-admin-reports',
@@ -13,65 +15,116 @@ import { ToastService } from '../services/toast.service';
     .reports-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-      gap: var(--spacing-xl);
+      gap: 2rem;
       margin-bottom: var(--spacing-xl);
     }
 
     .chart-card {
-      background: var(--bg-primary);
-      border-radius: var(--border-radius-lg);
-      padding: var(--spacing-xl);
-      box-shadow: var(--shadow-sm);
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #1976d2, #42a5f5);
+      opacity: 0.8;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
     }
 
     .chart-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--primary);
-      margin: 0 0 var(--spacing-lg) 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 1.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -0.02em;
     }
 
     .chart-container {
       position: relative;
-      height: 300px;
+      height: 320px;
       margin-bottom: var(--spacing-md);
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1rem;
     }
 
-    .export-section {
-      background: var(--bg-primary);
-      border-radius: var(--border-radius-lg);
+    .no-data-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      text-align: center;
       padding: var(--spacing-xl);
-      box-shadow: var(--shadow-sm);
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border-radius: 12px;
     }
 
-    .fields-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: var(--spacing-sm);
-      margin: var(--spacing-md) 0;
+    .no-data-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.4;
+      filter: grayscale(0.3);
     }
 
-    .field-checkbox {
+    .no-data-text {
+      font-size: 1.05rem;
+      color: #6c757d;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .chart-loading {
       display: flex;
       align-items: center;
-      gap: var(--spacing-xs);
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 1rem;
     }
 
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--spacing-md);
-      margin: var(--spacing-md) 0;
+    .chart-loading::after {
+      content: '...';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
     }
 
     @media (max-width: 768px) {
       .reports-container {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
       }
 
-      .fields-grid,
-      .filters-grid {
-        grid-template-columns: 1fr;
+      .chart-card {
+        padding: 1.25rem;
+      }
+
+      .chart-container {
+        height: 280px;
       }
     }
   `],
@@ -79,149 +132,90 @@ import { ToastService } from '../services/toast.service';
       <div>
       <div style="margin-bottom: var(--spacing-xl);">
         <h1 style="margin: 0 0 var(--spacing-xs) 0; color: var(--primary);">Reportes y Estadísticas</h1>
-        <p class="text-muted" style="margin: 0;">Visualiza estadísticas y exporta datos de egresados</p>
+        <p class="text-muted" style="margin: 0;">Visualiza estadísticas de egresados</p>
       </div>
 
-      <div class="reports-container" *ngIf="!loadingCharts">
+      <div class="reports-container">
+        <!-- Egresados por Programa -->
         <div class="chart-card">
           <h2 class="chart-title">📊 Egresados por Programa</h2>
           <div class="chart-container">
-            <canvas #programChart></canvas>
+            <div *ngIf="chartStates.program === 'loading'" class="chart-loading">
+              <span>Cargando...</span>
+            </div>
+            <div *ngIf="chartStates.program === 'noData'" class="no-data-message">
+              <div class="no-data-icon">📊</div>
+              <div class="no-data-text">No hay información disponible para este reporte.</div>
+            </div>
+            <canvas #programChart *ngIf="chartStates.program === 'hasData'"></canvas>
           </div>
         </div>
 
+        <!-- Egresados por Año -->
         <div class="chart-card">
           <h2 class="chart-title">📅 Egresados por Año</h2>
           <div class="chart-container">
-            <canvas #yearChart></canvas>
+            <div *ngIf="chartStates.year === 'loading'" class="chart-loading">
+              <span>Cargando...</span>
+            </div>
+            <div *ngIf="chartStates.year === 'noData'" class="no-data-message">
+              <div class="no-data-icon">📅</div>
+              <div class="no-data-text">No hay información disponible para este reporte.</div>
+            </div>
+            <canvas #yearChart *ngIf="chartStates.year === 'hasData'"></canvas>
           </div>
         </div>
 
+        <!-- Egresados por Estado -->
         <div class="chart-card">
           <h2 class="chart-title">✅ Egresados por Estado</h2>
           <div class="chart-container">
-            <canvas #statusChart></canvas>
+            <div *ngIf="chartStates.status === 'loading'" class="chart-loading">
+              <span>Cargando...</span>
+            </div>
+            <div *ngIf="chartStates.status === 'noData'" class="no-data-message">
+              <div class="no-data-icon">✅</div>
+              <div class="no-data-text">No hay información disponible para este reporte.</div>
+            </div>
+            <canvas #statusChart *ngIf="chartStates.status === 'hasData'"></canvas>
           </div>
         </div>
 
+        <!-- Registros en Eventos -->
         <div class="chart-card">
           <h2 class="chart-title">📅 Registros en Eventos</h2>
           <div class="chart-container">
-            <canvas #eventsChart></canvas>
+            <div *ngIf="chartStates.events === 'loading'" class="chart-loading">
+              <span>Cargando...</span>
+            </div>
+            <div *ngIf="chartStates.events === 'noData'" class="no-data-message">
+              <div class="no-data-icon">📅</div>
+              <div class="no-data-text">No hay información disponible para este reporte.</div>
+            </div>
+            <canvas #eventsChart *ngIf="chartStates.events === 'hasData'"></canvas>
           </div>
         </div>
-      </div>
-
-      <div *ngIf="loadingCharts" class="loading-spinner" style="display: flex; justify-content: center; padding: var(--spacing-2xl);">
-        <div class="loading"></div>
-      </div>
-
-      <div class="export-section">
-        <h2 style="margin-top: 0; color: var(--primary);">📥 Exportar Datos</h2>
-        <form [formGroup]="f" (ngSubmit)="export()">
-          <div class="form-group">
-            <label>Campos a Exportar</label>
-            <div class="fields-grid">
-              <div class="field-checkbox" *ngFor="let c of allFields">
-                <input 
-                  type="checkbox" 
-                  [value]="c" 
-                  [checked]="selectedFields.includes(c)"
-                  (change)="toggleField($event)" />
-                <label style="margin: 0; cursor: pointer;">{{c}}</label>
-              </div>
-            </div>
-          </div>
-
-          <h3 style="margin-top: var(--spacing-xl);">Filtros</h3>
-          <div class="filters-grid">
-            <div class="form-group">
-              <label for="facultad">Facultad</label>
-              <input id="facultad" formControlName="facultad" />
-            </div>
-            <div class="form-group">
-              <label for="programa">Programa</label>
-              <input id="programa" formControlName="programa" />
-            </div>
-            <div class="form-group">
-              <label for="anio">Año</label>
-              <input id="anio" type="number" formControlName="anio" />
-            </div>
-            <div class="form-group">
-              <label for="pais">País</label>
-              <input id="pais" formControlName="pais" />
-            </div>
-            <div class="form-group">
-              <label for="ciudad">Ciudad</label>
-              <input id="ciudad" formControlName="ciudad" />
-            </div>
-            <div class="form-group">
-              <label for="sector">Sector</label>
-              <input id="sector" formControlName="sector" />
-            </div>
-            <div class="form-group">
-              <label for="situacion">Situación</label>
-              <input id="situacion" formControlName="situacion" />
-            </div>
-            <div class="form-group">
-              <label for="updatedFrom">Actualizado desde</label>
-              <input id="updatedFrom" type="datetime-local" formControlName="updatedFrom" />
-            </div>
-            <div class="form-group">
-              <label for="updatedTo">Actualizado hasta</label>
-              <input id="updatedTo" type="datetime-local" formControlName="updatedTo" />
-            </div>
-            <div class="form-group">
-              <label for="format">Formato</label>
-              <select id="format" formControlName="format">
-                <option value="csv">CSV</option>
-                <option value="xlsx">Excel (XLSX)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="justification">Justificación (si exportas > 5000 sin filtros)</label>
-            <textarea 
-              id="justification"
-              formControlName="justification"
-              rows="3"
-              placeholder="Explica por qué necesitas exportar más de 5000 registros..."></textarea>
-          </div>
-
-          <button class="btn" type="submit" [disabled]="exporting">
-            <span *ngIf="!exporting">📥 Exportar</span>
-            <span *ngIf="exporting">Exportando...</span>
-          </button>
-    </form>
       </div>
   </div>
   `
 })
-export class AdminReportsComponent implements OnInit, AfterViewInit {
+export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('programChart') programChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('yearChart') yearChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('statusChart') statusChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('eventsChart') eventsChartRef!: ElementRef<HTMLCanvasElement>;
 
-  allFields = ['identificacion','nombre','correo','pais','ciudad','telefono','situacion','industria','empresa','cargo','consentimiento','onboarding','actualizado','facultad','programa','anio'];
-  selectedFields: string[] = ['identificacion','nombre','correo'];
-  loadingCharts = false;
-  exporting = false;
+  chartStates = {
+    program: 'loading' as 'loading' | 'hasData' | 'noData',
+    year: 'loading' as 'loading' | 'hasData' | 'noData',
+    status: 'loading' as 'loading' | 'hasData' | 'noData',
+    events: 'loading' as 'loading' | 'hasData' | 'noData'
+  };
   
-  f = this.fb.group({ 
-    facultad:[''], 
-    programa:[''], 
-    anio:[null], 
-    pais:[''], 
-    ciudad:[''], 
-    sector:[''], 
-    situacion:[''], 
-    updatedFrom:[''], 
-    updatedTo:[''], 
-    justification:[''], 
-    format:['csv']
-  });
+  private programChart: Chart | null = null;
+  private yearChart: Chart | null = null;
+  private statusChart: Chart | null = null;
+  private eventsChart: Chart | null = null;
 
   constructor(
     private fb: FormBuilder, 
@@ -231,257 +225,552 @@ export class AdminReportsComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
-    this.loadCharts();
+    // No cargar aquí, esperar a que las vistas estén listas
   }
 
   ngAfterViewInit() {
-    // Los gráficos se cargarán después de que las vistas estén inicializadas
+    // Cargar gráficos después de que las vistas estén inicializadas
+    setTimeout(() => {
+      this.loadCharts();
+    }, 100);
   }
 
-  loadCharts() {
-    this.loadingCharts = true;
-    
-    Promise.all([
-      this.reportsService.reportGraduatesByProgram().toPromise(),
-      this.reportsService.reportGraduatesByYear().toPromise(),
-      this.reportsService.reportGraduatesByStatus().toPromise(),
-      this.reportsService.reportEventRegistrations().toPromise()
-    ]).then(([programs, years, statuses, events]) => {
+  async loadCharts() {
+    // Cargar cada gráfica de forma independiente para que un error no afecte a las demás
+    this.loadProgramChart();
+    this.loadYearChart();
+    this.loadStatusChart();
+    this.loadEventsChart();
+  }
+
+  async loadProgramChart() {
+    try {
+      const response = await firstValueFrom(this.reportsService.reportGraduatesByProgram());
+      const data = response?.items || [];
+      
+      if (data.length === 0 || data.every((d: any) => !d.total || d.total === 0)) {
+        this.chartStates.program = 'noData';
+        return;
+      }
+      
+      this.chartStates.program = 'hasData';
       setTimeout(() => {
-        this.renderProgramChart(programs?.items || []);
-        this.renderYearChart(years?.items || []);
-        this.renderStatusChart(statuses?.items || []);
-        this.renderEventsChart(events?.items || []);
-        this.loadingCharts = false;
+        this.renderProgramChart(data);
       }, 100);
-    }).catch(() => {
-      this.loadingCharts = false;
-      this.toast.error('Error al cargar estadísticas');
-    });
+    } catch (error: any) {
+      console.error('Error al cargar gráfica de programas:', error);
+      this.chartStates.program = 'noData';
+    }
+  }
+
+  async loadYearChart() {
+    try {
+      const response = await firstValueFrom(this.reportsService.reportGraduatesByYear());
+      const data = response?.items || [];
+      
+      if (data.length === 0 || data.every((d: any) => !d.total || d.total === 0)) {
+        this.chartStates.year = 'noData';
+        return;
+      }
+      
+      this.chartStates.year = 'hasData';
+      setTimeout(() => {
+        this.renderYearChart(data);
+      }, 100);
+    } catch (error: any) {
+      console.error('Error al cargar gráfica de años:', error);
+      this.chartStates.year = 'noData';
+    }
+  }
+
+  async loadStatusChart() {
+    try {
+      const response = await firstValueFrom(this.reportsService.reportGraduatesByStatus());
+      const data = response?.items || [];
+      
+      if (data.length === 0 || data.every((d: any) => !d.total || d.total === 0)) {
+        this.chartStates.status = 'noData';
+        return;
+      }
+      
+      this.chartStates.status = 'hasData';
+      setTimeout(() => {
+        this.renderStatusChart(data);
+      }, 100);
+    } catch (error: any) {
+      console.error('Error al cargar gráfica de estados:', error);
+      this.chartStates.status = 'noData';
+    }
+  }
+
+  async loadEventsChart() {
+    try {
+      const response = await firstValueFrom(this.reportsService.reportEventRegistrations());
+      const data = response?.items || [];
+      
+      if (data.length === 0 || data.every((d: any) => !d.inscritos || d.inscritos === 0)) {
+        this.chartStates.events = 'noData';
+        return;
+      }
+      
+      this.chartStates.events = 'hasData';
+      setTimeout(() => {
+        this.renderEventsChart(data);
+      }, 100);
+    } catch (error: any) {
+      console.error('Error al cargar gráfica de eventos:', error);
+      this.chartStates.events = 'noData';
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.programChart) this.programChart.destroy();
+    if (this.yearChart) this.yearChart.destroy();
+    if (this.statusChart) this.statusChart.destroy();
+    if (this.eventsChart) this.eventsChart.destroy();
   }
 
   renderProgramChart(data: any[]) {
-    if (!this.programChartRef) return;
+    if (!this.programChartRef?.nativeElement) {
+      return;
+    }
     const ctx = this.programChartRef.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
-    // Usar gráfico simple con HTML5 Canvas sin Chart.js
-    this.renderSimpleBarChart(ctx, data.slice(0, 10).map((d: any) => ({
-      label: d.programa || 'Sin programa',
-      value: d.total || 0
-    })), 'Egresados por Programa');
+    // Agrupar por programa (sumar totales si hay múltiples años)
+    const programMap = new Map<string, number>();
+    data.forEach((d: any) => {
+      const programa = d.programa || 'Sin programa';
+      const total = (d.total || 0) as number;
+      programMap.set(programa, (programMap.get(programa) || 0) + total);
+    });
+
+    const sortedPrograms = Array.from(programMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15); // Top 15 programas
+
+    const labels = sortedPrograms.map(p => p[0]);
+    const values = sortedPrograms.map(p => p[1]);
+
+    if (labels.length === 0 || values.length === 0) {
+      this.chartStates.program = 'noData';
+      return;
+    }
+
+    if (this.programChart) {
+      this.programChart.destroy();
+    }
+
+    // Generar colores con gradiente para cada barra
+    const generateGradient = (ctx: CanvasRenderingContext2D, color1: string, color2: string) => {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
+      return gradient;
+    };
+
+    const backgroundColors = labels.map((_, i) => {
+      const gradient = generateGradient(ctx, 'rgba(25, 118, 210, 0.8)', 'rgba(25, 118, 210, 0.4)');
+      return gradient;
+    });
+
+    this.programChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Egresados',
+          data: values,
+          backgroundColor: 'rgba(25, 118, 210, 0.8)',
+          borderColor: 'rgba(25, 118, 210, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1200,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: 12,
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 13
+            },
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              title: () => '',
+              label: (context) => `${context.parsed.y} egresado${context.parsed.y !== 1 ? 's' : ''}`,
+              afterLabel: (context) => `Programa: ${context.label}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 8
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 10
+            }
+          }
+        }
+      }
+    });
   }
 
   renderYearChart(data: any[]) {
-    if (!this.yearChartRef) return;
+    if (!this.yearChartRef?.nativeElement) {
+      return;
+    }
     const ctx = this.yearChartRef.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
-    this.renderSimpleBarChart(ctx, data.map((d: any) => ({
-      label: String(d.anio || 'Sin año'),
-      value: d.total || 0
-    })), 'Egresados por Año');
+    // Ordenar por año descendente
+    const sortedData = [...data].sort((a: any, b: any) => {
+      const yearA = a.anio || 0;
+      const yearB = b.anio || 0;
+      return yearB - yearA;
+    });
+
+    const labels = sortedData.map((d: any) => String(d.anio || 'Sin año'));
+    const values = sortedData.map((d: any) => d.total || 0);
+
+    if (labels.length === 0 || values.length === 0) {
+      this.chartStates.year = 'noData';
+      return;
+    }
+
+    if (this.yearChart) {
+      this.yearChart.destroy();
+    }
+
+    this.yearChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Egresados',
+          data: values,
+          backgroundColor: 'rgba(76, 175, 80, 0.8)',
+          borderColor: 'rgba(76, 175, 80, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1200,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: 12,
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 13
+            },
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              title: () => '',
+              label: (context) => `${context.parsed.y} egresado${context.parsed.y !== 1 ? 's' : ''}`,
+              afterLabel: (context) => `Año: ${context.label}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 8
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 10
+            }
+          }
+        }
+      }
+    });
   }
 
   renderStatusChart(data: any[]) {
-    if (!this.statusChartRef) return;
+    if (!this.statusChartRef?.nativeElement) {
+      return;
+    }
     const ctx = this.statusChartRef.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
-    this.renderSimplePieChart(ctx, data.map((d: any) => ({
-      label: d.estado || 'Sin estado',
-      value: d.total || 0
-    })));
+    const labels = data.map((d: any) => d.estado || 'Sin estado');
+    const values = data.map((d: any) => d.total || 0);
+
+    if (labels.length === 0 || values.length === 0) {
+      this.chartStates.status = 'noData';
+      return;
+    }
+
+    if (this.statusChart) {
+      this.statusChart.destroy();
+    }
+
+    // Colores mejorados para estados
+    const statusColors = [
+      { bg: 'rgba(255, 152, 0, 0.85)', border: 'rgba(255, 152, 0, 1)' }, // ACTIVO - Naranja
+      { bg: 'rgba(156, 39, 176, 0.85)', border: 'rgba(156, 39, 176, 1)' }, // INACTIVO - Morado
+      { bg: 'rgba(244, 67, 54, 0.85)', border: 'rgba(244, 67, 54, 1)' }, // Otro - Rojo
+      { bg: 'rgba(33, 150, 243, 0.85)', border: 'rgba(33, 150, 243, 1)' }, // Azul
+      { bg: 'rgba(76, 175, 80, 0.85)', border: 'rgba(76, 175, 80, 1)' }  // Verde
+    ];
+
+    this.statusChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Egresados',
+          data: values,
+          backgroundColor: labels.map((_, i) => statusColors[i % statusColors.length].bg),
+          borderColor: labels.map((_, i) => statusColors[i % statusColors.length].border),
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1200,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: 12,
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 13
+            },
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: () => '',
+              label: (context) => `${context.parsed.y} egresado${context.parsed.y !== 1 ? 's' : ''}`,
+              afterLabel: (context) => `Estado: ${context.label}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 8
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 10
+            }
+          }
+        }
+      }
+    });
   }
 
   renderEventsChart(data: any[]) {
-    if (!this.eventsChartRef) return;
+    if (!this.eventsChartRef?.nativeElement) {
+      return;
+    }
     const ctx = this.eventsChartRef.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    this.renderSimpleBarChart(ctx, data.slice(0, 10).map((d: any) => ({
-      label: (d.eventoNombre || 'Sin nombre').substring(0, 20),
-      value: d.inscritos || 0
-    })), 'Registros en Eventos');
-  }
-
-  renderSimpleBarChart(ctx: CanvasRenderingContext2D, data: Array<{label: string, value: number}>, title: string) {
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
-    const padding = 40;
-    const chartWidth = width - 2 * padding;
-    const chartHeight = height - 2 * padding - 30;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    // Título
-    ctx.fillStyle = '#212121';
-    ctx.font = 'bold 14px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText(title, width / 2, 20);
-    
-    if (data.length === 0) {
-      ctx.fillStyle = '#9e9e9e';
-      ctx.fillText('No hay datos disponibles', width / 2, height / 2);
+    if (!ctx) {
       return;
     }
-    
-    const maxValue = Math.max(...data.map(d => d.value));
-    const barWidth = chartWidth / data.length * 0.8;
-    const spacing = chartWidth / data.length * 0.2;
-    
-    // Ejes
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding - 30);
-    ctx.lineTo(width - padding, height - padding - 30);
-    ctx.stroke();
-    
-    // Barras
-    data.forEach((item, i) => {
-      const x = padding + i * (barWidth + spacing) + spacing / 2;
-      const barHeight = (item.value / maxValue) * chartHeight;
-      const y = height - padding - 30 - barHeight;
-      
-      ctx.fillStyle = `hsl(${(i * 360) / data.length}, 70%, 50%)`;
-      ctx.fillRect(x, y, barWidth, barHeight);
-      
-      // Valor
-      ctx.fillStyle = '#212121';
-      ctx.font = '12px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(item.value), x + barWidth / 2, y - 5);
-      
-      // Label
-      ctx.fillStyle = '#616161';
-      ctx.font = '10px Inter';
-      ctx.save();
-      ctx.translate(x + barWidth / 2, height - padding - 15);
-      ctx.rotate(-Math.PI / 4);
-      ctx.fillText(item.label.substring(0, 15), 0, 0);
-      ctx.restore();
-    });
-  }
 
-  renderSimplePieChart(ctx: CanvasRenderingContext2D, data: Array<{label: string, value: number}>) {
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
-    const centerX = width / 2;
-    const centerY = height / 2 - 15;
-    const radius = Math.min(width, height) / 2 - 60;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    // Título
-    ctx.fillStyle = '#212121';
-    ctx.font = 'bold 14px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText('Egresados por Estado', width / 2, 20);
-    
-    if (data.length === 0) {
-      ctx.fillStyle = '#9e9e9e';
-      ctx.fillText('No hay datos disponibles', width / 2, height / 2);
+    // Los datos ya vienen filtrados por año actual desde el backend
+    // Ordenar por número de inscritos descendente y tomar los primeros 15
+    const sortedEvents = [...data]
+      .sort((a: any, b: any) => (b.inscritos || 0) - (a.inscritos || 0))
+      .slice(0, 15);
+
+    const labels = sortedEvents.map((d: any) => {
+      const nombre = d.eventoNombre || 'Sin nombre';
+      return nombre.length > 25 ? nombre.substring(0, 22) + '...' : nombre;
+    });
+    const values = sortedEvents.map((d: any) => d.inscritos || 0);
+
+    if (labels.length === 0 || values.length === 0) {
+      this.chartStates.events = 'noData';
       return;
     }
-    
-    const total = data.reduce((sum, d) => sum + d.value, 0);
-    if (total === 0) return;
-    
-    let currentAngle = -Math.PI / 2;
-    
-    // Dibujar rebanadas
-    data.forEach((item, i) => {
-      const sliceAngle = (item.value / total) * 2 * Math.PI;
-      
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-      ctx.closePath();
-      
-      ctx.fillStyle = `hsl(${(i * 360) / data.length}, 70%, 50%)`;
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Etiquetas
-      const labelAngle = currentAngle + sliceAngle / 2;
-      const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
-      const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
-      
-      ctx.fillStyle = '#212121';
-      ctx.font = 'bold 12px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(item.value), labelX, labelY);
-      
-      // Leyenda
-      const legendY = height - 40 + i * 20;
-      ctx.fillRect(20, legendY - 10, 15, 15);
-      ctx.fillStyle = '#212121';
-      ctx.font = '11px Inter';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${item.label} (${item.value})`, 40, legendY);
-      
-      currentAngle += sliceAngle;
-    });
-  }
 
-  toggleField(ev: any) {
-    const val = ev.target.value;
-    if (ev.target.checked) {
-      if (!this.selectedFields.includes(val)) {
-        this.selectedFields.push(val);
-      }
-    } else {
-      this.selectedFields = this.selectedFields.filter(f => f !== val);
-    }
-  }
-
-  export() {
-    const v = this.f.value as any;
-    const fmt = v.format || 'csv';
-    const body: any = {
-      fields: this.selectedFields,
-      facultad: v.facultad || null,
-      programa: v.programa || null,
-      anio: v.anio || null,
-      pais: v.pais || null,
-      ciudad: v.ciudad || null,
-      sector: v.sector || null,
-      situacion: v.situacion || null,
-      updatedFrom: v.updatedFrom ? new Date(v.updatedFrom as string).toISOString() : null,
-      updatedTo: v.updatedTo ? new Date(v.updatedTo as string).toISOString() : null,
-      justification: v.justification || null,
-      format: fmt
-    };
-
-    this.exporting = true;
-    const opts: any = { observe: 'response' as any };
-    if (fmt === 'csv') {
-      opts.responseType = 'text' as any;
-    } else {
-      opts.responseType = 'blob' as any;
+    if (this.eventsChart) {
+      this.eventsChart.destroy();
     }
 
-    this.api.post('/admin/reports/export', body, opts).subscribe({
-      next: (res: any) => {
-        this.exporting = false;
-        const isCsv = fmt === 'csv';
-      const blob = isCsv ? new Blob([res.body], { type: 'text/csv;charset=utf-8;' }) : res.body;
-      const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = isCsv ? 'export-egresados.csv' : 'export-egresados.xlsx';
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.toast.success('Exportación completada');
+    this.eventsChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Inscritos',
+          data: values,
+          backgroundColor: 'rgba(156, 39, 176, 0.8)',
+          borderColor: 'rgba(156, 39, 176, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
       },
-      error: () => {
-        this.exporting = false;
-        this.toast.error('Error al exportar datos');
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1200,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: 12,
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 13
+            },
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              title: () => '',
+              label: (context) => `${context.parsed.y} inscrito${context.parsed.y !== 1 ? 's' : ''}`,
+              afterLabel: (context) => `Evento: ${context.label}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 8
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45,
+              font: {
+                size: 11
+              },
+              color: '#6c757d',
+              padding: 10
+            }
+          }
+        }
       }
     });
   }
+
+
 }

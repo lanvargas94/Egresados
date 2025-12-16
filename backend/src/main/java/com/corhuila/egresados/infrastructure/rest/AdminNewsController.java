@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/news")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "10. Administración - Noticias", description = "CRUD completo de noticias: creación, edición, programación y publicación")
 public class AdminNewsController {
     private final SpringNewsJpaRepository jpa;
     private final com.corhuila.egresados.infrastructure.audit.AuditService audit;
@@ -161,12 +162,14 @@ public class AdminNewsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         var n = jpa.findById(id).orElseThrow();
+        String userDir = System.getProperty("user.dir");
+        java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
         if (n.getImagenUrl() != null && n.getImagenUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
+            java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
             try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
         }
         if (n.getAdjuntoUrl() != null && n.getAdjuntoUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
+            java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
             try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
         }
         jpa.delete(n);
@@ -175,79 +178,121 @@ public class AdminNewsController {
     }
 
     @PostMapping("/{id}/upload-image")
-    public ResponseEntity<?> uploadImage(@PathVariable java.util.UUID id, @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
-        if (file.getSize() > 10 * 1024 * 1024) return ResponseEntity.badRequest().body(java.util.Map.of("error","Archivo > 10MB"));
-        String ct = file.getContentType();
-        if (ct == null || !(ct.equals("image/jpeg") || ct.equals("image/png"))) return ResponseEntity.badRequest().body(java.util.Map.of("error","Solo JPG/PNG"));
-        var n = jpa.findById(id).orElseThrow();
-        // Reemplazo: borrar archivo anterior si existe
-        if (n.getImagenUrl() != null && n.getImagenUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
-            try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
+    public ResponseEntity<?> uploadImage(@PathVariable java.util.UUID id, @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            if (file.getSize() > 2 * 1024 * 1024) return ResponseEntity.badRequest().body(java.util.Map.of("error","Archivo > 2MB"));
+            String ct = file.getContentType();
+            if (ct == null || !(ct.equals("image/jpeg") || ct.equals("image/png"))) return ResponseEntity.badRequest().body(java.util.Map.of("error","Solo JPG/PNG"));
+            var n = jpa.findById(id).orElseThrow();
+            // Reemplazo: borrar archivo anterior si existe
+            if (n.getImagenUrl() != null && n.getImagenUrl().startsWith("/uploads/")) {
+                String userDir = System.getProperty("user.dir");
+                java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+                java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
+                try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
+            }
+            // Crear directorio de forma robusta usando ruta absoluta
+            String userDir = System.getProperty("user.dir");
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+            java.nio.file.Path dir = baseDir.resolve("uploads").resolve("news").resolve("images");
+            java.nio.file.Files.createDirectories(dir);
+            // Verificar que el directorio existe y es escribible
+            if (!java.nio.file.Files.exists(dir) || !java.nio.file.Files.isWritable(dir)) {
+                return ResponseEntity.status(500).body(java.util.Map.of("error","No se pudo crear el directorio de uploads"));
+            }
+            String ext = ct.equals("image/png")?".png":".jpg";
+            String filename = id+"_"+System.currentTimeMillis()+ext;
+            java.nio.file.Path path = dir.resolve(filename);
+            // Asegurar que el archivo se escriba correctamente usando Files.copy
+            java.nio.file.Files.copy(file.getInputStream(), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            // Verificar que el archivo se escribió
+            if (!java.nio.file.Files.exists(path)) {
+                return ResponseEntity.status(500).body(java.util.Map.of("error","Error al guardar el archivo"));
+            }
+            n.setImagenUrl("/uploads/news/images/"+filename);
+            var saved = jpa.save(n);
+            audit.log("UPLOAD_IMAGE","News", saved.getId().toString(), filename);
+            return ResponseEntity.ok(saved);
+        } catch (java.io.IOException ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error","Error al subir imagen: " + ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error","Error del servidor: " + ex.getMessage()));
         }
-        java.nio.file.Path dir = java.nio.file.Paths.get("uploads","news","images");
-        java.nio.file.Files.createDirectories(dir);
-        String ext = ct.equals("image/png")?".png":".jpg";
-        String filename = id+"_"+System.currentTimeMillis()+ext;
-        java.nio.file.Path path = dir.resolve(filename);
-        file.transferTo(path.toFile());
-        n.setImagenUrl("/uploads/news/images/"+filename);
-        var saved = jpa.save(n);
-        audit.log("UPLOAD_IMAGE","News", saved.getId().toString(), filename);
-        return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/{id}/upload-attachment")
-    public ResponseEntity<?> uploadAttachment(@PathVariable java.util.UUID id, @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
-        // Validar tamaño máximo: 5 MB
-        long maxSize = 5 * 1024 * 1024; // 5 MB
-        if (file.getSize() > maxSize) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error","El archivo excede el tamaño máximo de 5 MB"));
+    public ResponseEntity<?> uploadAttachment(@PathVariable java.util.UUID id, @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            // Validar tamaño máximo: 2 MB
+            long maxSize = 2 * 1024 * 1024; // 2 MB
+            if (file.getSize() > maxSize) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error","El archivo excede el tamaño máximo de 2 MB"));
+            }
+            
+            // Validar extensiones permitidas: .pdf, .doc, .docx
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error","Nombre de archivo inválido"));
+            }
+            String lowerFilename = originalFilename.toLowerCase();
+            boolean isValidExtension = lowerFilename.endsWith(".pdf") || 
+                                       lowerFilename.endsWith(".doc") || 
+                                       lowerFilename.endsWith(".docx");
+            
+            if (!isValidExtension) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error","Solo se permiten archivos .pdf, .doc o .docx"));
+            }
+            
+            var n = jpa.findById(id).orElseThrow();
+            // Reemplazo: borrar archivo anterior si existe
+            if (n.getAdjuntoUrl() != null && n.getAdjuntoUrl().startsWith("/uploads/")) {
+                String userDir = System.getProperty("user.dir");
+                java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+                java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
+                try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
+            }
+            // Crear directorio de forma robusta usando ruta absoluta
+            String userDir = System.getProperty("user.dir");
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+            java.nio.file.Path dir = baseDir.resolve("uploads").resolve("news").resolve("attachments");
+            java.nio.file.Files.createDirectories(dir);
+            // Verificar que el directorio existe y es escribible
+            if (!java.nio.file.Files.exists(dir) || !java.nio.file.Files.isWritable(dir)) {
+                return ResponseEntity.status(500).body(java.util.Map.of("error","No se pudo crear el directorio de uploads"));
+            }
+            
+            // Determinar extensión del archivo original
+            String ext = "";
+            if (lowerFilename.endsWith(".pdf")) ext = ".pdf";
+            else if (lowerFilename.endsWith(".docx")) ext = ".docx";
+            else if (lowerFilename.endsWith(".doc")) ext = ".doc";
+            
+            String filename = id+"_"+System.currentTimeMillis()+ext;
+            java.nio.file.Path path = dir.resolve(filename);
+            // Asegurar que el archivo se escriba correctamente usando Files.copy
+            java.nio.file.Files.copy(file.getInputStream(), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            // Verificar que el archivo se escribió
+            if (!java.nio.file.Files.exists(path)) {
+                return ResponseEntity.status(500).body(java.util.Map.of("error","Error al guardar el archivo"));
+            }
+            n.setAdjuntoUrl("/uploads/news/attachments/"+filename);
+            var saved = jpa.save(n);
+            audit.log("UPLOAD_ATTACHMENT","News", saved.getId().toString(), filename);
+            return ResponseEntity.ok(saved);
+        } catch (java.io.IOException ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error","Error al subir adjunto: " + ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error","Error del servidor: " + ex.getMessage()));
         }
-        
-        // Validar extensiones permitidas: .pdf, .doc, .docx
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error","Nombre de archivo inválido"));
-        }
-        String lowerFilename = originalFilename.toLowerCase();
-        boolean isValidExtension = lowerFilename.endsWith(".pdf") || 
-                                   lowerFilename.endsWith(".doc") || 
-                                   lowerFilename.endsWith(".docx");
-        
-        if (!isValidExtension) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error","Solo se permiten archivos .pdf, .doc o .docx"));
-        }
-        
-        var n = jpa.findById(id).orElseThrow();
-        // Reemplazo: borrar archivo anterior si existe
-        if (n.getAdjuntoUrl() != null && n.getAdjuntoUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
-            try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
-        }
-        java.nio.file.Path dir = java.nio.file.Paths.get("uploads","news","attachments");
-        java.nio.file.Files.createDirectories(dir);
-        
-        // Determinar extensión del archivo original
-        String ext = "";
-        if (lowerFilename.endsWith(".pdf")) ext = ".pdf";
-        else if (lowerFilename.endsWith(".docx")) ext = ".docx";
-        else if (lowerFilename.endsWith(".doc")) ext = ".doc";
-        
-        String filename = id+"_"+System.currentTimeMillis()+ext;
-        java.nio.file.Path path = dir.resolve(filename);
-        file.transferTo(path.toFile());
-        n.setAdjuntoUrl("/uploads/news/attachments/"+filename);
-        var saved = jpa.save(n);
-        audit.log("UPLOAD_ATTACHMENT","News", saved.getId().toString(), filename);
-        return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/{id}/delete-image")
     public ResponseEntity<?> deleteImage(@PathVariable UUID id) throws java.io.IOException {
         var n = jpa.findById(id).orElseThrow();
         if (n.getImagenUrl() != null && n.getImagenUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
+            String userDir = System.getProperty("user.dir");
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+            java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getImagenUrl().substring("/uploads/".length()));
             try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
         }
         n.setImagenUrl(null);
@@ -260,7 +305,9 @@ public class AdminNewsController {
     public ResponseEntity<?> deleteAttachment(@PathVariable UUID id) throws java.io.IOException {
         var n = jpa.findById(id).orElseThrow();
         if (n.getAdjuntoUrl() != null && n.getAdjuntoUrl().startsWith("/uploads/")) {
-            java.nio.file.Path old = java.nio.file.Paths.get("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
+            String userDir = System.getProperty("user.dir");
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(userDir != null ? userDir : "/app");
+            java.nio.file.Path old = baseDir.resolve("uploads").resolve(n.getAdjuntoUrl().substring("/uploads/".length()));
             try { java.nio.file.Files.deleteIfExists(old); } catch (Exception ignored) {}
         }
         n.setAdjuntoUrl(null);

@@ -89,6 +89,11 @@ public class AdminJobOfferService {
         return repo.save(job);
     }
 
+    public void delete(UUID id) {
+        repo.findById(id).orElseThrow(); // Verificar que existe
+        repo.delete(id);
+    }
+
     private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
     public boolean isVencida(JobOffer j) { 
         return j.getFechaFinPublicacion() != null && 

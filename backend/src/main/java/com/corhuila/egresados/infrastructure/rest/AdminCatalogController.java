@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/catalogs")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "15. Administración - Catálogos", description = "Gestión de catálogos maestros: facultades, programas, ciudades, sectores y tipos de contrato")
 public class AdminCatalogController {
     private final FacultyRepository facultyRepo;
     private final ProgramCatalogRepository programRepo;
