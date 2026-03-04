@@ -33,3 +33,6 @@ INSERT INTO cities(country_code, name) VALUES
     ('CO', 'Itagüí')
 ON CONFLICT DO NOTHING;
 
+
+
+

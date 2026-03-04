@@ -28,7 +28,7 @@ services:
       MAIL_FROM: no-reply@egresados.local
       APP_CONFIRM_URL: http://localhost:3002/confirmar?token=
     ports:
-      - "8080:8080"  # Exponer backend para acceso directo (Swagger, pruebas, etc.)
+      - "18080:8080"  # Exponer backend para acceso directo (Swagger, pruebas, etc.)
     volumes:
       - uploads_data:/app/uploads  # Volumen persistente para archivos subidos
     depends_on:
@@ -46,9 +46,10 @@ services:
   mailhog:
     image: mailhog/mailhog:latest
     ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
+      - "11025:1025"  # SMTP
+      - "18026:8025"  # Web UI
 
 volumes:
   db_data:
   uploads_data:  # Volumen para persistir archivos subidos (imágenes y adjuntos de noticias)
+
