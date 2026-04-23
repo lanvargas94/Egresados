@@ -30,8 +30,8 @@ node -v       # Solo si usaras el frontend local
 
 - 3002: frontend (Nginx). Si ya usas 3002, cambia el mapeo del servicio `frontend` en `deploy/docker-compose.yml` (ej. `3005:80`).
 - 5432: PostgreSQL. Si tienes otro Postgres en 5432, cambia el mapeo `5432:5432` (ej. `5440:5432`) y ajusta tus clientes externos.
-- 1025 (SMTP) y 8025 (UI): Mailhog. Cambia los mapeos si los tienes ocupados.
-- 8080: Backend (expuesto directamente para acceso a Swagger y pruebas de API). Accede a `http://localhost:8080/swagger-ui.html` para la documentación interactiva.
+- 11025 (SMTP) y 18026 (UI): Mailhog. Cambia los mapeos si los tienes ocupados.
+- 18080: Backend (expuesto directamente para acceso a Swagger y pruebas de API). Accede a `http://localhost:18080/swagger-ui.html` para la documentación interactiva.
 
 ## Variables clave en `deploy/docker-compose.yml`
 
@@ -71,7 +71,7 @@ docker compose up --build -d
 
 3) Verificar  
 - Frontend: `http://localhost:3002` (UI y peticiones /api proxied al backend).
-- Mailhog UI: `http://localhost:8025` (correos dev). SMTP en `localhost:1025`.
+- Mailhog UI: `http://localhost:118026` (correos dev). SMTP en `localhost:11025`.
 - Logs: `docker compose logs -f backend` o `docker compose logs -f frontend`.
 - Datos/usuarios de prueba: ver `DATOS_PRUEBA.md`.
 
@@ -385,11 +385,11 @@ npm start
 ### Documentación API (Swagger/OpenAPI)
 
 **✅ USAR SIEMPRE - Acceso directo al backend:**
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html` - Interfaz interactiva para probar endpoints
-- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs` - Especificación OpenAPI en formato JSON
-- **OpenAPI YAML**: `http://localhost:8080/v3/api-docs.yaml` - Especificación OpenAPI en formato YAML
+- **Swagger UI**: `http://localhost:18080/swagger-ui.html` - Interfaz interactiva para probar endpoints
+- **OpenAPI JSON**: `http://localhost:18080/v3/api-docs` - Especificación OpenAPI en formato JSON
+- **OpenAPI YAML**: `http://localhost:18080/v3/api-docs.yaml` - Especificación OpenAPI en formato YAML
 
-> **⚠️ IMPORTANTE**: Usa siempre el puerto **8080** (acceso directo al backend). Si intentas acceder a través del puerto 3002 (frontend), Angular puede redirigirte a la página de identificación debido a su sistema de routing. El backend está expuesto directamente en el puerto 8080 para facilitar el acceso a Swagger y pruebas de API.
+> **⚠️ IMPORTANTE**: Usa siempre el puerto **18080** (acceso directo al backend). Si intentas acceder a través del puerto 3002 (frontend), Angular puede redirigirte a la página de identificación debido a su sistema de routing. El backend está expuesto directamente en el puerto 8081 para facilitar el acceso a Swagger y pruebas de API.
 
 #### Características de la documentación:
 - ✅ Documentación completa de todos los endpoints
@@ -402,7 +402,7 @@ npm start
 - ✅ Pruebas directas desde el navegador
 
 #### Uso de Swagger UI:
-1. **Accede directamente al backend**: `http://localhost:8080/swagger-ui.html`
+1. **Accede directamente al backend**: `http://localhost:18080/swagger-ui.html`
    - ⚠️ NO uses `http://localhost:3002/swagger-ui.html` (te redirigirá a la página de identificación)
 2. Para probar endpoints protegidos:
    - Haz clic en el botón **"Authorize"** (🔒) en la parte superior
@@ -419,8 +419,8 @@ npm start
 
 ## Notas Importantes
 
-- **Mailhog**: Captura todos los correos en desarrollo, revisa confirmaciones y códigos OTP en `http://localhost:8025`. Los correos con adjuntos se pueden ver en la interfaz de Mailhog, incluyendo imágenes inline y documentos adjuntos.
-- **Exposición del backend**: El backend está expuesto directamente en el puerto 8080 para facilitar el acceso a Swagger y pruebas de API. Accede a `http://localhost:8080/swagger-ui.html` para la documentación interactiva.
+- **Mailhog**: Captura todos los correos en desarrollo, revisa confirmaciones y códigos OTP en `http://localhost:118026`. Los correos con adjuntos se pueden ver en la interfaz de Mailhog, incluyendo imágenes inline y documentos adjuntos.
+- **Exposición del backend**: El backend está expuesto directamente en el puerto 8081 para facilitar el acceso a Swagger y pruebas de API. Accede a `http://localhost:18080/swagger-ui.html` para la documentación interactiva.
 - **Almacenamiento persistente**: Los archivos subidos (imágenes de noticias, adjuntos, etc.) se almacenan en un volumen Docker persistente (`uploads_data`) para evitar pérdida de datos al reconstruir contenedores.
 - **Codificación UTF-8**: El sistema está configurado para manejar correctamente caracteres especiales (tildes, ñ) en toda la aplicación, tanto en la base de datos como en las respuestas HTTP.
 - **Tareas programadas**: El sistema ejecuta tareas automáticas en segundo plano (expiración de ofertas, finalización de eventos, auto-publicación de noticias).
@@ -445,3 +445,8 @@ npm start
   - Organización profesional con tags numéricos para orden lógico
 - **Servicio de correo**: Integración con Mailhog para desarrollo, configurable para SMTP real en producción
 - **Codificación**: UTF-8 estandarizado en toda la aplicación (backend, frontend, base de datos)
+
+
+
+
+
